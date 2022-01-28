@@ -24,6 +24,12 @@ Public Function WithMandatoryKey(ByVal Key As String, _
                                  ) As IRecordListToTableBinderBuilder
 End Function
 
+'@Description "Привязка необязательного ключа, если столбца нет - работает как ключ без привязки"
+Public Function WithOptionalKey(ByVal Key As String, _
+                                ByVal ColumnToBind As Long _
+                                ) As IRecordListToTableBinderBuilder
+End Function
+
 '@Description "Привязка первичного ключа, может быть только один"
 Public Function WithPrimaryKey(ByVal Key As String, _
                                ByVal ColumnToBind As Long _

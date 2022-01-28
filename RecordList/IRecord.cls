@@ -36,6 +36,9 @@ End Function
 Public Property Get IsChanged() As Boolean
 End Property
 
+Public Function GetCopy() As IRecord
+End Function
+
 '===============================================================================
 
 Public Property Get Self() As IRecord
