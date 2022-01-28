@@ -41,6 +41,9 @@ End Property
 Public Function Filter() As IRecordListFilter
 End Function
 
+Public Function GetCopy() As IRecordList
+End Function
+
 Public Property Get NewEnum() As EnumHelper
 End Property
 

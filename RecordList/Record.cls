@@ -111,6 +111,18 @@ Private Property Set IRecord_Field(ByVal Key As String, RHS As Variant)
   This.Changed = True
 End Property
 
+Private Function IRecord_GetCopy() As IRecord
+  Dim ThisFactory As IRecordFactory
+  Set ThisFactory = Me
+  With ThisFactory.Builder(Self.Keys)
+    Dim Key As Variant
+    For Each Key In This.Encapsulated.Keys
+      .WithField Key, This.Encapsulated.Item(Key)
+    Next Key
+    Set IRecord_GetCopy = .Build
+  End With
+End Function
+
 Private Property Get IRecord_Keys() As IList
   Set IRecord_Keys = List.Create
   Dim Key As Variant

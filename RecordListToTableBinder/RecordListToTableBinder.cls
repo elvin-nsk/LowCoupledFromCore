@@ -87,6 +87,13 @@ Private Function IRecordListToTableBinderBuilder_WithMandatoryKey _
   This.MandatoryKeys.Add Key
 End Function
 
+Private Function IRecordListToTableBinderBuilder_WithOptionalKey _
+                 (ByVal Key As String, ByVal ColumnToBind As Long _
+                 ) As IRecordListToTableBinderBuilder
+  If ColumnExists(ColumnToBind) Then This.Bindings.Add Key, ColumnToBind
+  This.Keys.Add Key
+End Function
+
 Private Function IRecordListToTableBinderBuilder_WithPrimaryKey _
                  (ByVal Key As String, ByVal ColumnToBind As Long _
                  ) As IRecordListToTableBinderBuilder
@@ -198,6 +205,16 @@ Private Function FindRecordIndex(ByVal Row As Long) As Long
       Exit Function
     End If
   Next i
+End Function
+
+Private Function ColumnExists(ByVal Column As Long) As Boolean
+  On Error GoTo ErrorHandler
+  Dim Temp As Variant
+  Temp = This.Table.Cell(1, Column)
+  ColumnExists = True
+  Exit Function
+ErrorHandler:
+  On Error GoTo 0
 End Function
 
 Private Sub ThrowPrimaryKeyAlreadySet()

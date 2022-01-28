@@ -113,6 +113,19 @@ Private Property Get IRecordList_Count() As Long
   IRecordList_Count = This.Records.Count
 End Property
 
+Private Function IRecordList_GetCopy() As IRecordList
+  With This
+    Dim RecordsCopies As IList
+    Set RecordsCopies = List.Create
+    Dim Item As IRecord
+    For Each Item In .Records.NewEnum
+      RecordsCopies.Add Item.GetCopy
+    Next Item
+    Set IRecordList_GetCopy = _
+      CreateClone(RecordsCopies, .Keys, .PrimaryKey, .RecordFactory)
+  End With
+End Function
+
 Private Function IRecordList_KeyExists(ByVal Key As String) As Boolean
   IRecordList_KeyExists = This.Keys.Contains(Key)
 End Function
