@@ -30,7 +30,9 @@ Public Function Create() As IList
   End With
 End Function
 
+'@DefaultMember
 Public Function CreateFrom(ParamArray Items() As Variant) As IList
+Attribute CreateFrom.VB_UserMemId = 0
   With New List
     Set CreateFrom = .Init()
     Dim Item As Variant
