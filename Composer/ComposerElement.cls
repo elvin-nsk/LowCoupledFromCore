@@ -2,11 +2,11 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "Stackable"
+Attribute VB_Name = "ComposerElement"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 '@PredeclaredId
 Option Explicit
 
@@ -23,15 +23,15 @@ Private This As typeThis
 
 Public Function Create( _
                   ByVal ShapeOrRange As Object _
-                ) As Stackable
-  With New Stackable
+                ) As ComposerElement
+  With New ComposerElement
     Set Create = .Init(ShapeOrRange)
   End With
 End Function
 
 Friend Function Init( _
                   ByVal ShapeOrRange As Object _
-                ) As Stackable
+                ) As ComposerElement
   With This
     If TypeOf ShapeOrRange Is Shape Then
       Set .Shapes = New ShapeRange
@@ -40,7 +40,7 @@ Friend Function Init( _
     ElseIf TypeOf ShapeOrRange Is ShapeRange Then
       Set .Shapes = ShapeOrRange
     Else
-      VBA.Err.Raise 13, Source:="Stackable", _
+      VBA.Err.Raise 13, Source:="ComposerElement", _
                     Description:="Type mismatch: ShapeOrRange должен быть Shape или ShapeRange"
     End If
   End With
@@ -61,6 +61,10 @@ Public Property Get Height() As Double
 End Property
 Public Property Let Height(ByVal RHS As Double)
   This.Shapes.SizeHeight = RHS
+End Property
+
+Public Property Get Shapes() As ShapeRange
+  Set Shapes = This.Shapes
 End Property
 
 Public Property Get PivotX() As Double
@@ -92,7 +96,7 @@ Public Property Let Name(ByVal RHS As String)
   End If
 End Property
 
-Public Property Get Self() As Stackable
+Public Property Get Self() As ComposerElement
   Set Self = Me
 End Property
 
