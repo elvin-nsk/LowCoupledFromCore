@@ -23,9 +23,9 @@ Set MyList = List.Create
 
 В каждой папке - подробное описание.
 
-**[Composer](Composer\README.md)**  - простой укладчик шейпов или шейпренджей.
+**[Composer](https://github.com/elvin-nsk/LowCoupledFromCore/tree/main/Composer)**  - простой укладчик шейпов или шейпренджей.
 
-**[Either](Either\README.md)** - конструкция для работы с методами, которые могут выполняться с предусмотренной ошибкой.
+**[Either](https://github.com/elvin-nsk/LowCoupledFromCore/tree/main/Either)** - конструкция для работы с методами, которые могут выполняться с предусмотренной ошибкой.
 
 **FileBrowser** - браузер файлов, standalone, так сказать.
 
