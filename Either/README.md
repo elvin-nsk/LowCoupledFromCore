@@ -16,6 +16,7 @@ Either.Create(Optional SuccessValue As Variant, Optional ErrorValue As Variant)
 ```
 
 `SuccessValue`  - передаваемый объект в случае успеха
+
 `ErrorValue`  - передаваемый объект в случае ошибки
 
 ### Поля:
