@@ -36,4 +36,4 @@ End With
 
 ## Зависимости
 
-`Point`.
+[Point](Point).

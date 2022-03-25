@@ -25,7 +25,7 @@ Set MyList = List.Create
 
 **[Composer](Composer)**  - простой укладчик шейпов или шейпренджей.
 
-**[Either](https://github.com/elvin-nsk/LowCoupledFromCore/tree/main/Either)** - конструкция для работы с методами, которые могут выполняться с предусмотренной ошибкой.
+**[Either](Either)** - конструкция для работы с методами, которые могут выполняться с предусмотренной ошибкой.
 
 **FileBrowser** - браузер файлов, standalone, так сказать.
 
