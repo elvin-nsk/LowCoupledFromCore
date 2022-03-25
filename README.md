@@ -23,7 +23,7 @@ Set MyList = List.Create
 
 В каждой папке - подробное описание.
 
-**[Composer](https://github.com/elvin-nsk/LowCoupledFromCore/tree/main/Composer)**  - простой укладчик шейпов или шейпренджей.
+**[Composer](Composer)**  - простой укладчик шейпов или шейпренджей.
 
 **[Either](https://github.com/elvin-nsk/LowCoupledFromCore/tree/main/Either)** - конструкция для работы с методами, которые могут выполняться с предусмотренной ошибкой.
 
