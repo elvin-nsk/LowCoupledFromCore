@@ -117,7 +117,7 @@ Public Function ShowFileOpenDialog() As Collection
   Dim PrevFilePos As Long
   
   With OpenFile
-    .lStructSize = LenB(OpenFile) 'VBA.LenB вызывает в этом месте ошибку (!)
+    .lStructSize = LenB(OpenFile)
     .hwndOwner = 0
     .hInstance = 0
     'The Filter starts with a FileType Name then the File Extension with Chr(0) in between.

@@ -17,7 +17,7 @@
 Dim ComposerElements As New Collection
 Dim Shape As Shape
 For Each Shape In ActiveSelectionRange
-  ComposerElements.Add ComposerElement.Create(Shape)
+    ComposerElements.Add ComposerElement.Create(Shape)
 Next Shape
 
 ' инициализируем и запускаем Composer с этой коллекцией:
@@ -30,7 +30,7 @@ With Composer.CreateAndCompose( _
                   MaxHeight:=297, _
                   HorizontalSpace:=0, _
                   VerticalSpace:=0 _
-                )
+              )
 End With
 ```
 

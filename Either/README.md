@@ -34,24 +34,24 @@
 ' возвращаем текущий документ
 ' либо, если нет открытых документов - возвращаем Either со статусом Error
 Function GetDocument() as IEither
-  If ActiveDocument Is Nothing Then
-    Set GetDocument = Either.Create
-    Exit Function
-  End If
-  Set GetDocument = Either.Create(ActiveDocument)
+    If ActiveDocument Is Nothing Then
+        Set GetDocument = Either.Create
+        Exit Function
+    End If
+    Set GetDocument = Either.Create(ActiveDocument)
 End Function
 
 ' запрашиваем активный документ в главной процедуре
 ' если его нет - выдаём ошибку и завершаем
 Sub Main()
-  Dim MyDocument as Document
-  With GetDocument
-    If .IsError Then
-      VBA.MsgBox "Нет открытых документов"
-      Exit Sub
-    End If
-    Set MyDocument = .SuccessValue
-  End With
+    Dim MyDocument as Document
+    With GetDocument
+        If .IsError Then
+            VBA.MsgBox "Нет открытых документов"
+            Exit Sub
+        End If
+        Set MyDocument = .SuccessValue
+    End With
 End Sub
 ```
 
