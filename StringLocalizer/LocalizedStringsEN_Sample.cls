@@ -23,8 +23,8 @@ Private Sub Class_Initialize()
     
         .Add "Common.ErrNothingSelected", "Select shapes"
   
-        .Add "UDView.BtnCancel", "Cancel"
-        .Add "UDView.BtnDelete", "Delete"
+        .Add "View.BtnOk", "Ok"
+        .Add "View.BtnCancel", "Cancel"
 
     End With
 End Sub
