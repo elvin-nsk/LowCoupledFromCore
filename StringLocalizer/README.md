@@ -10,7 +10,7 @@ Simple strings localizer.
 For example, we may create English localization as fallback. Rename module `LocalizedStringsEN_Sample` to, let say, `LocalizedStringsEN` for convience, and create "name-string" pairs for inner `Strings` dictionary, in a manner it currently there. Key in that dictionary will be a name for your placeholder, where string substitutes, and value will be that string.
 4. It's a convient way to declare a global variable for localizer, but you also may use local variable and pass it between modules of your project, if you against globals. Let's name it `LocalizedStrings` for the following examples.
 5. Substitute strings in your project with your localizer variable with `Item` method: `LocalizedStrings.Item("PlaceholderName")`. It's a default method, so it can be omitted: `LocalizedStrings("PlaceholderName")`.
-6. Add more locales. Create new class module and copy content of your fallback module there. Rename it to somewhat convient like `LocalizedStringsRU`, optionally change comment in header to Corel enum for that local and LCID (locale ID), you may also add localizator credits there:
+6. (optionally) Add more locales. Create new class module and copy content of your fallback module there. Rename it to somewhat convient like `LocalizedStringsRU`, optionally change comment in header to Corel enum for that local and LCID (locale ID), you may also add localizator credits there:
 ```VBA
 '===============================================================================
 ' cdrRussian (1049) by Ivan Petrov (https://ivanpetrov.ru)
