@@ -21,10 +21,10 @@ Private Sub Class_Initialize()
     Set Strings = New Scripting.Dictionary
     With Strings
     
-        .Add "Common.ErrNothingSelected", "Select shapes"
+        .Add "Common.ErrNoSelection", "Select shapes"
   
-        .Add "View.BtnOk", "Ok"
-        .Add "View.BtnCancel", "Cancel"
+        .Add "View.ButtonOk", "Ok"
+        .Add "View.ButtonCancel", "Cancel"
 
     End With
 End Sub

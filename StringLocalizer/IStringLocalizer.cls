@@ -16,9 +16,10 @@ Public Sub ForceLocale(ByVal LCID As Variant)
 End Sub
 
 '@DefaultMember
-Public Property Get Item(ByVal Key As String, _
-                                                 ParamArray Args() As Variant _
-                                                 ) As String
+Public Property Get Item( _
+                        ByVal Key As String, _
+                        ParamArray Args() As Variant _
+                    ) As String
 Attribute Item.VB_UserMemId = 0
 End Property
 
