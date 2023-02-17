@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "InputData"
+Attribute VB_Name = "InitData"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -15,10 +15,11 @@ Option Explicit
 
 '===============================================================================
 
-Private Const DefaultErrMsgNoDocument As String = "Нет активного документа"
-Private Const DefaultErrMsgLayerDisabled As String = _
-    "Откройте текущий слой для редактирования"
-Private Const DefaultErrErrNoSelection As String = "Выделите объекты"
+Private Const DefaultErrNoDocument As String = "Нет активного документа."
+Private Const DefaultErrLayerDisabled As String = _
+    "Текущий слой закрыт."
+Private Const DefaultErrNoSelection As String = "Выделите объекты."
+Private Const DefaultErrPageEmpty As String = "Страница пустая."
 
 Private Type typeThis
     Document As Document
@@ -33,38 +34,45 @@ Private This As typeThis
 '===============================================================================
 
 Public Function GetDocumentOrPage( _
-                    Optional ByVal ErrMsgNoDocument As String = _
-                        DefaultErrMsgNoDocument _
-                ) As InputData
-    Set GetDocumentOrPage = New InputData
+                    Optional ByVal ErrNoDocument As String = _
+                        DefaultErrNoDocument, _
+                    Optional ByVal PageCanBeEmpty As Boolean = False, _
+                    Optional ByVal ErrPageEmpty As String = _
+                        DefaultErrPageEmpty _
+                ) As InitData
+    Set GetDocumentOrPage = New InitData
+    If ActiveDocument Is Nothing Then
+        VBA.MsgBox ErrNoDocument, vbExclamation
+        Exit Function
+    End If
+    If (ActiveDocument.ActivePage.Shapes.Count = 0) And Not PageCanBeEmpty Then
+        VBA.MsgBox ErrPageEmpty, vbExclamation
+        Exit Function
+    End If
     With GetDocumentOrPage
-        .InjectSuccess Not ActiveDocument Is Nothing
-        If .IsSuccess Then
-            .InjectDocument ActiveDocument
-            .InjectPage .Document.ActivePage
-            .InjectLayer GetFirstNonSpecialOrActiveLayer(.Page)
-            .InjectShapes .Page.Shapes.All
-            .InjectShape .Page.Shapes.First
-        Else
-            VBA.MsgBox ErrMsgNoDocument, vbExclamation
-        End If
+        .InjectSuccess True
+        .InjectDocument ActiveDocument
+        .InjectPage .Document.ActivePage
+        .InjectLayer GetFirstNonSpecialOrActiveLayer(.Page)
+        .InjectShapes .Page.Shapes.All
+        .InjectShape .Page.Shapes.First
     End With
 End Function
 
 Public Function GetLayer( _
-                    Optional ByVal ErrMsgNoDocument As String = _
-                        DefaultErrMsgNoDocument, _
+                    Optional ByVal ErrNoDocument As String = _
+                        DefaultErrNoDocument, _
                     Optional ByVal LayerMustBeEnabled As Boolean = False, _
-                    Optional ByVal ErrMsgLayerDisabled As String = _
-                        DefaultErrMsgLayerDisabled _
-                ) As InputData
-    Set GetLayer = New InputData
+                    Optional ByVal ErrLayerDisabled As String = _
+                        DefaultErrLayerDisabled _
+                ) As InitData
+    Set GetLayer = New InitData
     If ActiveDocument Is Nothing Then
-        VBA.MsgBox ErrMsgNoDocument, vbExclamation
+        VBA.MsgBox ErrNoDocument, vbExclamation
         Exit Function
     End If
     If Not LayerIsOk(ActiveLayer, LayerMustBeEnabled) Then
-        VBA.MsgBox ErrMsgLayerDisabled, vbExclamation
+        VBA.MsgBox ErrLayerDisabled, vbExclamation
         Exit Function
     End If
     With GetLayer
@@ -78,17 +86,17 @@ Public Function GetLayer( _
 End Function
 
 Public Function GetShapes( _
-                    Optional ByVal ErrMsgNoDocument As String = _
-                        DefaultErrMsgNoDocument, _
+                    Optional ByVal ErrNoDocument As String = _
+                        DefaultErrNoDocument, _
                     Optional ByVal LayerMustBeEnabled As Boolean = False, _
-                    Optional ByVal ErrMsgLayerDisabled As String = _
-                        DefaultErrMsgLayerDisabled, _
+                    Optional ByVal ErrLayerDisabled As String = _
+                        DefaultErrLayerDisabled, _
                     Optional ByVal ErrNoSelection As String = _
-                        DefaultErrErrNoSelection _
-                ) As InputData
-    Set GetShapes = New InputData
+                        DefaultErrNoSelection _
+                ) As InitData
+    Set GetShapes = New InitData
     If ActiveDocument Is Nothing Then
-        VBA.MsgBox ErrMsgNoDocument, vbExclamation
+        VBA.MsgBox ErrNoDocument, vbExclamation
         Exit Function
     End If
     If ActiveSelectionRange.Count = 0 Then
@@ -103,7 +111,7 @@ Public Function GetShapes( _
         .InjectLayer .Shape.Layer
         .InjectSuccess LayerIsOk(ActiveLayer, LayerMustBeEnabled)
         If Not .IsSuccess Then
-            VBA.MsgBox ErrMsgLayerDisabled, vbExclamation
+            VBA.MsgBox ErrLayerDisabled, vbExclamation
         End If
     End With
 End Function
@@ -162,7 +170,7 @@ Public Property Get Shapes() As ShapeRange
     Set Shapes = This.Shapes
 End Property
 
-Public Property Get Self() As InputData
+Public Property Get Self() As InitData
     Set Self = Me
 End Property
 
@@ -188,5 +196,5 @@ Private Function LayerIsOk( _
 End Function
 
 Private Function LayerEnabled(ByVal Layer As Layer) As Boolean
-    LayerEnabled = Layer.Editable And Layer.Visible
+    LayerEnabled = Layer.Visible And Layer.Printable And Layer.Editable
 End Function
