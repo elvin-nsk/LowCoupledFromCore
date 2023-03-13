@@ -1,7 +1,7 @@
 Attribute VB_Name = "LibCore"
 '===============================================================================
 '   Модуль          : LibCore
-'   Версия          : 2023.02.16
+'   Версия          : 2023.03.12
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Использован код : dizzy (из макроса CtC), Alex Vakulenko
 '                     и др.
@@ -86,7 +86,24 @@ Public Property Get FindShapesByName( _
                         ByVal Shapes As ShapeRange, _
                         ByVal Name As String _
                     ) As ShapeRange
-    Set FindShapesByName = FindAllShapes(Shapes).Shapes.FindShapes(Name)
+    Set FindShapesByName = _
+        FindAllShapes(Shapes).Shapes.FindShapes( _
+            Name:=Name, Recursive:=False _
+        )
+End Property
+
+'находит все шейпы с данными именами, включая шейпы в поверклипах, с рекурсией
+'и помещает их в как рейнджи в словарь, где ключ = имя
+Public Property Get FindShapesByNames( _
+                        ByVal Shapes As ShapeRange, _
+                        ByRef NamesSequence As Variant _
+                    ) As Scripting.IDictionary
+    Dim Dic As New Scripting.Dictionary
+    Dim Name As Variant
+    For Each Name In NamesSequence
+        Dic.Add Name, FindShapesByName(Shapes, Name)
+    Next Name
+    Set FindShapesByNames = Dic
 End Property
 
 'находит все шейпы, часть имени которых совпадает с NamePart,
@@ -1312,6 +1329,10 @@ Public Property Get FindFileInGMSFolders(ByVal FileName As String) As String
         FindFileInGMSFolders = ""
 End Property
 
+Public Property Get FSO() As Scripting.FileSystemObject
+    Set FSO = New Scripting.FileSystemObject
+End Property
+
 'возвращает имя файла без расширения
 Public Property Get GetFileNameNoExt(ByVal FileName As String) As String
     If VBA.Right(FileName, 1) <> "\" And VBA.Len(FileName) > 0 Then
@@ -1657,9 +1678,9 @@ Public Sub RemoveElementFromCollection( _
     Next i
 End Sub
 
-Public Property Get Max(ByRef EnumerableSet As Variant) As Variant
+Public Property Get Max(ByRef Sequence As Variant) As Variant
     Dim Item As Variant
-    For Each Item In EnumerableSet
+    For Each Item In Sequence
         If VBA.IsNumeric(Item) Then
             If Item > Max Then Max = Item
         End If
@@ -1680,9 +1701,9 @@ Public Function MeasureFinish(Optional ByVal Message As String = "")
     Debug.Print Message & VBA.CStr(Round(Timer - StartTime, 3)) & " секунд"
 End Function
 
-Public Property Get Min(ByRef EnumerableSet As Variant) As Variant
+Public Property Get Min(ByRef Sequence As Variant) As Variant
     Dim Item As Variant
-    For Each Item In EnumerableSet
+    For Each Item In Sequence
         If VBA.IsNumeric(Item) Then
             If Item < Min Then
                 Min = Item
@@ -1699,14 +1720,14 @@ Public Property Get MinOfTwo( _
 End Property
 
 Public Property Get Contains( _
-                        ByRef EnumerableSet As Variant, _
+                        ByRef Sequence As Variant, _
                         ByRef Items As Variant _
                     ) As Boolean
     Dim Element As Variant
     Dim Item As Variant
     Dim ItemExists As Boolean
     For Each Item In Items
-        For Each Element In EnumerableSet
+        For Each Element In Sequence
             If IsSame(Item, Element) Then
                 ItemExists = True
                 Exit For
