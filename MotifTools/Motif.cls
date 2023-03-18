@@ -12,9 +12,9 @@ Option Explicit
 
 '===============================================================================
 
+Public Quantity As Long
 Public SurfaceA As Surface
 Public SurfaceB As Surface
-Public Quantity As Long
 
 '===============================================================================
 

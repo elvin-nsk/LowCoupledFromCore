@@ -1,7 +1,7 @@
 Attribute VB_Name = "LibCore"
 '===============================================================================
 '   Модуль          : LibCore
-'   Версия          : 2023.03.12
+'   Версия          : 2023.03.18
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Использован код : dizzy (из макроса CtC), Alex Vakulenko
 '                     и др.
@@ -389,6 +389,14 @@ Public Property Get GetMixedColor( _
     GetMixedColor.BlendWith MaybeColor2, MixRatio
 End Property
 
+Public Property Get GetRotatedRect(ByVal Rect As Rect) As Rect
+    Dim HalfDifference As Double
+    HalfDifference = (Rect.Width - Rect.Height) / 2
+    Set GetRotatedRect = Rect.GetCopy
+    GetRotatedRect.Inflate _
+        -HalfDifference, HalfDifference, -HalfDifference, HalfDifference
+End Property
+
 Public Property Get GetTopOrderShape(ByVal Shapes As ShapeRange) As Shape
     If Shapes.Count = 0 Then Exit Property
     Set GetTopOrderShape = Shapes(1)
@@ -743,6 +751,15 @@ Public Property Get LesserDim(ByVal ShapeOrRangeOrPage As Object) As Double
     End If
 End Property
 
+'количество объектов BoxToFit, которое поместится как есть на площади Area
+Public Property Get NumberToFitArea( _
+                        ByVal BoxToFit As Rect, _
+                        ByVal Area As Rect _
+                    ) As Long
+    NumberToFitArea = VBA.Fix(Area.Width / BoxToFit.Width) _
+                    * VBA.Fix(Area.Height / BoxToFit.Height)
+End Property
+
 Public Property Get ShapeHasOutline(ByVal Shape As Shape) As Boolean
     On Error GoTo Fail
     ShapeHasOutline = Not (Shape.Outline.Type = cdrNoOutline)
@@ -792,12 +809,21 @@ End Property
 
 'возвращает Rect, равный габаритам объекта плюс Space со всех сторон
 Public Property Get SpaceBox( _
-                    ByVal MaybeShapeOrRange As Variant, _
+                    ByVal MaybeHasSize As Variant, _
                     ByVal Space As Double _
                 ) As Rect
-    If Not (IsShape(MaybeShapeOrRange) Or IsShapeRange(MaybeShapeOrRange)) _
-        Then Exit Property
-    Set SpaceBox = MaybeShapeOrRange.BoundingBox.GetCopy
+    If Not AssignedObject(MaybeHasSize) Then Exit Property
+    If TypeOf MaybeHasSize Is Shape Then
+        Set SpaceBox = MaybeHasSize.BoundingBox.GetCopy
+    ElseIf TypeOf MaybeHasSize Is ShapeRange Then
+        Set SpaceBox = MaybeHasSize.BoundingBox.GetCopy
+    ElseIf TypeOf MaybeHasSize Is Page Then
+        Set SpaceBox = MaybeHasSize.BoundingBox.GetCopy
+    ElseIf TypeOf MaybeHasSize Is Rect Then
+        Set SpaceBox = MaybeHasSize.GetCopy
+    Else
+        Exit Property
+    End If
     SpaceBox.Inflate Space, Space, Space, Space
 End Property
 
@@ -844,38 +870,40 @@ End Function
 
 Public Sub Align( _
                ByVal ShapesBeingAligned As ShapeRange, _
-               ByVal RalativePage As Page, _
+               ByVal RelativeTo As Rect, _
                ByVal ReferencePoint As cdrReferencePoint _
            )
-    Select Case ReferencePoint
-        Case cdrTopRight
-            ShapesBeingAligned.TopY = RalativePage.TopY
-            ShapesBeingAligned.RightX = RalativePage.RightX
-        Case cdrTopMiddle
-            ShapesBeingAligned.TopY = RalativePage.TopY
-            ShapesBeingAligned.CenterX = RalativePage.CenterX
-        Case cdrTopLeft
-            ShapesBeingAligned.TopY = RalativePage.TopY
-            ShapesBeingAligned.LeftX = RalativePage.LeftX
-        Case cdrMiddleLeft
-            ShapesBeingAligned.CenterY = RalativePage.CenterY
-            ShapesBeingAligned.LeftX = RalativePage.LeftX
-        Case cdrBottomLeft
-            ShapesBeingAligned.BottomY = RalativePage.BottomY
-            ShapesBeingAligned.LeftX = RalativePage.LeftX
-        Case cdrBottomMiddle
-            ShapesBeingAligned.BottomY = RalativePage.BottomY
-            ShapesBeingAligned.CenterX = RalativePage.CenterX
-        Case cdrBottomRight
-            ShapesBeingAligned.BottomY = RalativePage.BottomY
-            ShapesBeingAligned.RightX = RalativePage.RightX
-        Case cdrMiddleRight
-            ShapesBeingAligned.CenterY = RalativePage.CenterY
-            ShapesBeingAligned.RightX = RalativePage.RightX
-        Case cdrCenter
-            ShapesBeingAligned.CenterY = RalativePage.CenterY
-            ShapesBeingAligned.CenterX = RalativePage.CenterX
-    End Select
+    With ShapesBeingAligned
+        Select Case ReferencePoint
+            Case cdrTopRight
+                .TopY = RelativeTo.Top
+                .RightX = RelativeTo.Right
+            Case cdrTopMiddle
+                .TopY = RelativeTo.Top
+                .CenterX = RelativeTo.CenterX
+            Case cdrTopLeft
+                .TopY = RelativeTo.Top
+                .LeftX = RelativeTo.Left
+            Case cdrMiddleLeft
+                .CenterY = RelativeTo.CenterY
+                .LeftX = RelativeTo.Left
+            Case cdrBottomLeft
+                .BottomY = RelativeTo.Bottom
+                .LeftX = RelativeTo.Left
+            Case cdrBottomMiddle
+                .BottomY = RelativeTo.Bottom
+                .CenterX = RelativeTo.CenterX
+            Case cdrBottomRight
+                .BottomY = RelativeTo.Bottom
+                .RightX = RelativeTo.Right
+            Case cdrMiddleRight
+                .CenterY = RelativeTo.CenterY
+                .RightX = RelativeTo.Right
+            Case cdrCenter
+                .CenterY = RelativeTo.CenterY
+                .CenterX = RelativeTo.CenterX
+        End Select
+    End With
 End Sub
 
 Public Property Get HasSize(ByRef MaybeSome As Variant) As Boolean
@@ -1242,6 +1270,13 @@ Public Sub SetOutlineColor( _
     Next Shape
 End Sub
 
+Public Sub SwapOrientation(ByVal Page As Page)
+    Dim x As Variant
+    x = Page.SizeHeight
+    Page.SizeHeight = Page.SizeWidth
+    Page.SizeWidth = x
+End Sub
+
 Public Sub Trim( _
                ByVal TrimmerShape As Shape, _
                ByRef TargetShape As Shape _
@@ -1538,33 +1573,25 @@ Public Sub BoostFinish(Optional ByVal EndUndoGroup As Boolean = True)
     Application.Windows.Refresh
 End Sub
 
-Public Function GetCollectionCopy(ByVal Source As Collection) As Collection
-    Set GetCollectionCopy = New Collection
+Public Property Get Contains( _
+                        ByRef Sequence As Variant, _
+                        ByRef Items As Variant _
+                    ) As Boolean
+    Dim Element As Variant
     Dim Item As Variant
-    For Each Item In Source
-        GetCollectionCopy.Add Item
+    Dim ItemExists As Boolean
+    For Each Item In Items
+        For Each Element In Sequence
+            If IsSame(Item, Element) Then
+                ItemExists = True
+                Exit For
+            End If
+        Next Element
+        If Not ItemExists Then Exit Property
+        ItemExists = False
     Next Item
-End Function
-
-Public Function GetCollectionFromDictionary( _
-                    ByVal Dictionary As Scripting.IDictionary _
-                ) As Collection
-    Set GetCollectionFromDictionary = New Collection
-    Dim Item As Variant
-    For Each Item In Dictionary.Items
-        GetCollectionFromDictionary.Add Item
-    Next Item
-End Function
-
-Public Function GetDictionaryCopy( _
-                    ByVal Source As Scripting.IDictionary _
-                ) As Scripting.Dictionary
-    Set GetDictionaryCopy = New Scripting.Dictionary
-    Dim Key As Variant
-    For Each Key In Source.Keys
-        GetDictionaryCopy.Add Key, Source.Item(Key)
-    Next Key
-End Function
+    Contains = True
+End Property
 
 Public Property Get Count(ByRef Arr As Variant) As Long
     Count = UBound(Arr) - LBound(Arr) + 1
@@ -1617,9 +1644,37 @@ Public Property Get FindMinItemNum(ByVal Collection As Collection) As Long
     Next i
 End Property
 
+Public Function GetCollectionCopy(ByVal Source As Collection) As Collection
+    Set GetCollectionCopy = New Collection
+    Dim Item As Variant
+    For Each Item In Source
+        GetCollectionCopy.Add Item
+    Next Item
+End Function
+
+Public Function GetCollectionFromDictionary( _
+                    ByVal Dictionary As Scripting.IDictionary _
+                ) As Collection
+    Set GetCollectionFromDictionary = New Collection
+    Dim Item As Variant
+    For Each Item In Dictionary.Items
+        GetCollectionFromDictionary.Add Item
+    Next Item
+End Function
+
+Public Function GetDictionaryCopy( _
+                    ByVal Source As Scripting.IDictionary _
+                ) As Scripting.Dictionary
+    Set GetDictionaryCopy = New Scripting.Dictionary
+    Dim Key As Variant
+    For Each Key In Source.Keys
+        GetDictionaryCopy.Add Key, Source.Item(Key)
+    Next Key
+End Function
+
 'является ли число чётным :) Что такое Even и Odd запоминать лень...
-Public Property Get IsChet(ByVal X As Variant) As Boolean
-    If X Mod 2 = 0 Then IsChet = True Else IsChet = False
+Public Property Get IsChet(ByVal x As Variant) As Boolean
+    If x Mod 2 = 0 Then IsChet = True Else IsChet = False
 End Property
 
 'делится ли Number на Divider нацело
@@ -1664,20 +1719,6 @@ Public Property Get IsVoid(ByRef Some As Variant) As Boolean
     End If
 End Property
 
-Public Sub RemoveElementFromCollection( _
-               ByVal Collection As Collection, _
-               ByVal Element As Variant _
-           )
-    If Collection.Count = 0 Then Exit Sub
-    Dim i As Long
-    For i = 1 To Collection.Count
-        If IsSame(Element, Collection(i)) Then
-            Collection.Remove i
-            Exit Sub
-        End If
-    Next i
-End Sub
-
 Public Property Get Max(ByRef Sequence As Variant) As Variant
     Dim Item As Variant
     For Each Item In Sequence
@@ -1719,26 +1760,6 @@ Public Property Get MinOfTwo( _
     If Value1 < Value2 Then MinOfTwo = Value1 Else MinOfTwo = Value2
 End Property
 
-Public Property Get Contains( _
-                        ByRef Sequence As Variant, _
-                        ByRef Items As Variant _
-                    ) As Boolean
-    Dim Element As Variant
-    Dim Item As Variant
-    Dim ItemExists As Boolean
-    For Each Item In Items
-        For Each Element In Sequence
-            If IsSame(Item, Element) Then
-                ItemExists = True
-                Exit For
-            End If
-        Next Element
-        If Not ItemExists Then Exit Property
-        ItemExists = False
-    Next Item
-    Contains = True
-End Property
-
 Public Property Get Pack(ParamArray Items() As Variant) As Variant()
     Dim Length As Long
     Length = UBound(Items) - LBound(Items) + 1
@@ -1772,6 +1793,20 @@ Public Function PackShapes(ParamArray Shapes() As Variant) As ShapeRange
         End If
     Next Item
 End Function
+
+Public Sub RemoveElementFromCollection( _
+               ByVal Collection As Collection, _
+               ByVal Element As Variant _
+           )
+    If Collection.Count = 0 Then Exit Sub
+    Dim i As Long
+    For i = 1 To Collection.Count
+        If IsSame(Element, Collection(i)) Then
+            Collection.Remove i
+            Exit Sub
+        End If
+    Next i
+End Sub
 
 Private Sub Resize(ByRef Arr As Variant, ByVal Length As Long)
     ReDim Preserve Arr(LBound(Arr) To LBound(Arr) + Length - 1)
@@ -1814,6 +1849,13 @@ Public Sub Show(ByRef Variable As Variant)
             
         End If
     End If
+End Sub
+
+Public Sub Swap(ByRef x As Variant, ByRef y As Variant)
+    Dim z As Variant
+    z = x
+    x = y
+    y = z
 End Sub
 
 Public Sub Throw(Optional ByVal Message As String = "Неизвестная ошибка")
@@ -1899,6 +1941,12 @@ End Sub
 '===============================================================================
 ' # юнит-тесты и ручные тесты модуля
 
+Private Sub TestGetRotatedRect()
+    Dim Rect As Rect
+    Set Rect = ActiveLayer.CreateRectangle(0, 0, 3, 6).BoundingBox
+    ActiveLayer.CreateRectangleRect GetRotatedRect(Rect)
+End Sub
+
 Private Sub TestShow()
     Show Empty
     Show Null
@@ -1936,4 +1984,43 @@ Private Sub UnitIsJust()
     Debug.Assert IsJust(Nothing) = False
     Debug.Assert IsJust(VBA.CVErr(ErrorCodes.ErrorInvalidArgument)) = False
     Debug.Print "IsJust is OK"
+End Sub
+
+Private Sub UnitNumberToFitArea()
+    Debug.Assert _
+        NumberToFitArea( _
+            CreateRect(0, 0, 10, 10), _
+            CreateRect(0, 0, 100, 100) _
+        ) = 100
+    Debug.Assert _
+        NumberToFitArea( _
+            CreateRect(0, 0, 10, 20), _
+            CreateRect(0, 0, 10, 20) _
+        ) = 1
+    Debug.Assert _
+        NumberToFitArea( _
+            CreateRect(0, 0, 10, 20), _
+            CreateRect(0, 0, 5, 5) _
+        ) = 0
+    Debug.Assert _
+        NumberToFitArea( _
+            CreateRect(0, 0, 10, 20), _
+            CreateRect(0, 0, 21, 21) _
+        ) = 2
+End Sub
+
+Private Sub UnitSpaceBox()
+    With SpaceBox(CreateRect(0, 0, 100, 100), 20)
+        Debug.Assert .Width = 140
+        Debug.Assert .Height = 140
+    End With
+End Sub
+
+Private Sub UnitSwap()
+    Dim x As Long, y As Long
+    x = 1
+    y = 2
+    Swap x, y
+    Debug.Assert x = 2
+    Debug.Assert y = 1
 End Sub
