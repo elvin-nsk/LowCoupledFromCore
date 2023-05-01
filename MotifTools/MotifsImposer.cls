@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 '===============================================================================
 '   Модуль          : MotifsImposer
-'   Версия          : 2023.03.18
+'   Версия          : 2023.04.18
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
 '   Назначение      :
@@ -27,7 +27,7 @@ Option Explicit
 
 Private Type typeThis
     Bleeds As Double
-    ComposedElements As Collection
+    ComposedShapesByPage As Collection
     CropMarksLength As Double
     EdgeMarginBottom As Double
     EdgeMarginLeft As Double
@@ -71,6 +71,7 @@ Friend Sub Inject( _
                ByVal TwoSided As Boolean _
            )
     With This
+        Set .ComposedShapesByPage = New Collection
         .CropMarksLength = 3
         .FillLastPage = False
         .ReferencePoint = cdrCenter
@@ -89,8 +90,8 @@ Public Property Let Bleeds(RHS As Double)
     This.Bleeds = RHS
 End Property
 
-Public Property Get ComposedElements() As Collection
-    Set ComposedElements = This.ComposedElements
+Public Property Get ComposedShapesByPage() As Collection
+    Set ComposedShapesByPage = This.ComposedShapesByPage
 End Property
 
 Public Property Get CropMarksLength() As Double
@@ -213,8 +214,6 @@ Private Sub Impose( _
         Dim Elements As Collection
         Set Elements = .Elements
         
-        Dim Impositions As Collection
-        Set Impositions = New Collection
         Dim ImpositionIndex As Long
         Dim LastPivot As IPoint
         Dim LastCount As Long
@@ -223,6 +222,7 @@ Private Sub Impose( _
         
         Dim ElementsComposer As Composer
         
+        Dim RawImpositionRanges As New Collection
         Dim ImpositionArea As Rect
         Set ImpositionArea = GetImpositionArea
     
@@ -239,7 +239,7 @@ Private Sub Impose( _
                     HorizontalSpace:=.HorizontalSpace, _
                     VerticalSpace:=.VerticalSpace _
                 )
-            
+                        
             Set ComposedShapes = _
                 ElementsToShapes(ElementsComposer.ComposedElements)
             
@@ -251,7 +251,7 @@ Private Sub Impose( _
                           
             If Not AutoAddPages Then Exit Do
             
-            Impositions.Add ComposedShapes
+            RawImpositionRanges.Add ComposedShapes
             Set Elements = ElementsComposer.RemainingElements
             
             If Elements.Count < LastCount _
@@ -265,10 +265,8 @@ Private Sub Impose( _
             End If
             
         Loop While Elements.Count > 0
-        
-        If AutoAddPages Then
-            ProcessImpositions Impositions
-        End If
+                
+        ProcessImpositions RawImpositionRanges, AutoAddPages
     
     End With
     
@@ -321,26 +319,23 @@ Private Sub AddRandomElements( _
 End Sub
 
 Private Sub ProcessImpositions( _
-                ByVal ImpositionRanges As Collection _
+                ByVal RawImpositionRanges As Collection, _
+                ByVal AutoAddPages As Boolean _
             )
     Dim ImpositionPages As Collection
-    Set ImpositionPages = DistributeByMultiplePages(ImpositionRanges)
-    If This.TwoSided Then Set ImpositionRanges = SeparateSides(ImpositionPages)
-    If This.PlaceCropMarks Then PlaceCropMarksOnImpositions ImpositionRanges
-End Sub
-
-Private Sub PlaceCropMarksOnImpositions(ByVal ImpositionRanges As Collection)
-    Dim Range As ShapeRange
-    Dim Shape As Shape
-    For Each Range In ImpositionRanges
-        Range.FirstShape.Page.Activate
-        With MarksSetter.Create(Range)
-            .Bleeds = This.Bleeds
-            .PlaceWhiteUndermark = False
-            .Size = 3
-            .SetMarksOnNewLayer
-        End With
-    Next Range
+    If AutoAddPages Then
+        Set ImpositionPages = DistributeByMultiplePages(RawImpositionRanges)
+    Else
+        Set ImpositionPages = New Collection
+        ImpositionPages.Add ActivePage
+    End If
+    If This.TwoSided Then
+        Set This.ComposedShapesByPage = SeparateSides(ImpositionPages)
+    Else
+        Set This.ComposedShapesByPage = RawImpositionRanges
+    End If
+    If This.PlaceCropMarks Then _
+        PlaceCropMarksOnImpositions This.ComposedShapesByPage
 End Sub
 
 Private Function DistributeByMultiplePages( _
@@ -403,6 +398,20 @@ End Sub
 Private Property Get GetBSides(ByVal Shapes As Shapes) As ShapeRange
     Set GetBSides = Shapes.FindShapes(Name:=SIDE_B_MARK, Recursive:=False)
 End Property
+
+Private Sub PlaceCropMarksOnImpositions(ByVal ImpositionRanges As Collection)
+    Dim Range As ShapeRange
+    Dim Shape As Shape
+    For Each Range In ImpositionRanges
+        Range.FirstShape.Page.Activate
+        With MarksSetter.Create(Range)
+            .Bleeds = This.Bleeds
+            .PlaceWhiteUndermark = False
+            .Size = 3
+            .SetMarksOnNewLayer
+        End With
+    Next Range
+End Sub
 
 Private Function ShapesToElements(ByVal Shapes As ShapeRange) As Collection
     Dim Shape As Shape

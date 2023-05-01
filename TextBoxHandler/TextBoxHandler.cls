@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '===============================================================================
 '   Модуль          : TextBoxHandler
-'   Версия          : 2022.04.23
+'   Версия          : 2023.05.01
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
 '   Назначение      : сохранение значений TextBox на форме в заданном диапазоне
@@ -44,7 +44,7 @@ Attribute Encapsulated.VB_VarHelpID = -1
 Public Function Create( _
                     ByVal TextBox As MSForms.TextBox, _
                     ByVal TextBoxType As enumTextBoxType, _
-                    Optional ByVal Min As Variant = 0, _
+                    Optional ByVal Min As Variant = -2147483647, _
                     Optional ByVal Max As Variant = 2147483647 _
                 ) As TextBoxHandler
     With New TextBoxHandler
