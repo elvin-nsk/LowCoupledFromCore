@@ -12,13 +12,18 @@ Option Explicit
 
 '===============================================================================
 
-Public Property Get Cell(ByVal Row As Long, _
-                         ByVal Column As Long) _
-                         As String
+'@DefaultMember
+Public Property Get Cell( _
+                        ByVal Row As Long, _
+                        ByVal Column As Long _
+                    ) As String
+Attribute Cell.VB_UserMemId = 0
 End Property
-Public Property Let Cell(ByVal Row As Long, _
-                         ByVal Column As Long, _
-                         RHS As String)
+Public Property Let Cell( _
+                        ByVal Row As Long, _
+                        ByVal Column As Long, _
+                        RHS As String _
+                    )
 End Property
 
 Public Property Get MaxRow() As Long

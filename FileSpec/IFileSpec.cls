@@ -17,6 +17,9 @@ End Property
 Public Property Let Ext(ByVal Value As String)
 End Property
 
+Public Property Get GetCopy() As IFileSpec
+End Property
+
 '@DefaultMember
 Public Function ToString() As String
 Attribute ToString.VB_UserMemId = 0

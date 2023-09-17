@@ -6,10 +6,10 @@ Attribute VB_Name = "MotifsImposer"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 '===============================================================================
 '   Модуль          : MotifsImposer
-'   Версия          : 2023.04.18
+'   Версия          : 2023.09.05
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
 '   Назначение      :
@@ -52,7 +52,10 @@ Private Const SIDE_A_MARK As String = "A"
 Private Const SIDE_B_MARK As String = "B"
 Private Const BACKGROUND_MARK As String = "подложка"
 
-Public Event OnImportFile()
+'===============================================================================
+' # Events
+
+Public Event OnImportFile(ByVal ioMotif As Motif)
 Public Event OnPageImposed()
 
 '===============================================================================
@@ -194,6 +197,13 @@ Public Property Get Self() As MotifsImposer
     Set Self = Me
 End Property
 
+Public Sub SetEdgeMarginsEqual(ByVal Margin As Double)
+    This.EdgeMarginBottom = Margin
+    This.EdgeMarginLeft = Margin
+    This.EdgeMarginRight = Margin
+    This.EdgeMarginTop = Margin
+End Sub
+
 Public Property Get VerticalSpace() As Double
     VerticalSpace = This.VerticalSpace
 End Property
@@ -211,6 +221,7 @@ Private Sub Impose( _
     With This
     
         Set .Elements = ImportAsMarkedElements(.MotifsToImport)
+        If .Elements.Count = 0 Then Exit Sub
         Dim Elements As Collection
         Set Elements = .Elements
         
@@ -296,8 +307,8 @@ Private Function AlignImposition( _
                 ComposedShapes.TopY _
             )
     Else
-        ComposedShapes.LeftX = Pivot.x
-        ComposedShapes.TopY = Pivot.y
+        ComposedShapes.LeftX = Pivot.X
+        ComposedShapes.TopY = Pivot.Y
     End If
 End Function
 
@@ -433,16 +444,16 @@ End Function
 
 Private Function ImportAsMarkedElements(ByRef Motifs As Variant) As Collection
     Set ImportAsMarkedElements = New Collection
-    Dim Item As Variant
+    Dim MaybeMotif As Variant
     Dim Shapes As ShapeRange
-    For Each Item In Motifs
-        MotifOrThrow Item
-        Set Shapes = ImportAsMarkedShapes(Item)
+    For Each MaybeMotif In Motifs
+        MotifOrThrow MaybeMotif
+        Set Shapes = ImportAsMarkedShapes(MaybeMotif)
+        RaiseEvent OnImportFile(MaybeMotif)
         AppendCollection _
             ImportAsMarkedElements, _
-            DuplicateRangesAsElements(Shapes, Item.Quantity)
-        RaiseEvent OnImportFile
-    Next Item
+            DuplicateRangesAsElements(Shapes, MaybeMotif.Quantity)
+    Next MaybeMotif
 End Function
 
 Private Function ImportAsMarkedShapes( _
@@ -450,24 +461,25 @@ Private Function ImportAsMarkedShapes( _
                  ) As ShapeRange
     Dim ShapesToElement As ShapeRange
     Set ImportAsMarkedShapes = CreateShapeRange
-    Dim ShapeA As Shape
-    Dim ShapeB As Shape
     With Motif
-        Set ShapeA = ImportSurface(.SurfaceA)
-        If This.PlaceWhiteBackground Then AddWhiteBackground ShapeA
-        ShapeA.Name = SIDE_A_MARK
-        ImportAsMarkedShapes.Add ShapeA
+        Set .SurfaceA.Content = ImportSurface(.SurfaceA)
+        If This.PlaceWhiteBackground Then AddWhiteBackground .SurfaceA.Content
+        .SurfaceA.Content.Name = SIDE_A_MARK
+        ImportAsMarkedShapes.Add .SurfaceA.Content
         If This.TwoSided Then
             If .HasSurfaceB Then
-                Set ShapeB = ImportSurface(.SurfaceB)
-                If This.PlaceWhiteBackground Then AddWhiteBackground ShapeB
+                Set .SurfaceB.Content = ImportSurface(.SurfaceB)
+                If This.PlaceWhiteBackground Then AddWhiteBackground .SurfaceB.Content
             Else
-                Set ShapeB = _
-                    DrawWhiteRectangle(ShapeA.Layer, ShapeA.BoundingBox)
+                Set .SurfaceB.Content = _
+                    DrawWhiteRectangle( _
+                        .SurfaceA.Content.Layer, _
+                        .SurfaceA.Content.BoundingBox _
+                    )
             End If
-            ShapeB.SetPosition ShapeA.PositionX, ShapeA.PositionY
-            ShapeB.Name = SIDE_B_MARK
-            ImportAsMarkedShapes.Add ShapeB
+            .SurfaceB.Content.SetPosition .SurfaceA.Content.PositionX, .SurfaceA.Content.PositionY
+            .SurfaceB.Content.Name = SIDE_B_MARK
+            ImportAsMarkedShapes.Add .SurfaceB.Content
         End If
     End With
 End Function
