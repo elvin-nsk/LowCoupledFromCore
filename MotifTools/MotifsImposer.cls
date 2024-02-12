@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '===============================================================================
 '   Модуль          : MotifsImposer
-'   Версия          : 2023.09.05
+'   Версия          : 2023.11.07
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
 '   Назначение      :
@@ -25,7 +25,7 @@ Option Explicit
 '===============================================================================
 ' # Declarations
 
-Private Type typeThis
+Private Type This
     Bleeds As Double
     ComposedShapesByPage As Collection
     CropMarksLength As Double
@@ -46,7 +46,7 @@ Private Type typeThis
     TwoSided As Boolean
     VerticalSpace As Double
 End Type
-Private This As typeThis
+Private This As This
 
 Private Const SIDE_A_MARK As String = "A"
 Private Const SIDE_B_MARK As String = "B"
@@ -55,7 +55,7 @@ Private Const BACKGROUND_MARK As String = "подложка"
 '===============================================================================
 ' # Events
 
-Public Event OnImportFile(ByVal ioMotif As Motif)
+Public Event OnImportShape(ByRef ioShape As Shape)
 Public Event OnPageImposed()
 
 '===============================================================================
@@ -449,7 +449,6 @@ Private Function ImportAsMarkedElements(ByRef Motifs As Variant) As Collection
     For Each MaybeMotif In Motifs
         MotifOrThrow MaybeMotif
         Set Shapes = ImportAsMarkedShapes(MaybeMotif)
-        RaiseEvent OnImportFile(MaybeMotif)
         AppendCollection _
             ImportAsMarkedElements, _
             DuplicateRangesAsElements(Shapes, MaybeMotif.Quantity)
@@ -498,8 +497,11 @@ Private Function DuplicateRangesAsElements( _
 End Function
 
 Private Function ImportSurface(ByVal Surface As Surface) As Shape
+    Dim Shape As Shape
     ActiveLayer.Import Surface.File
-    Set ImportSurface = ActiveShape
+    Set Shape = ActiveShape
+    RaiseEvent OnImportShape(Shape)
+    Set ImportSurface = Shape
 End Function
 
 Private Sub AddWhiteBackground(ByRef ioShape As Shape)

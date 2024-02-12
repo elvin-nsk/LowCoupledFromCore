@@ -5,112 +5,124 @@ END
 Attribute VB_Name = "FileSpec"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
+Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
-'@PredeclaredId
+'@Folder System
 Option Explicit
 
-Implements IFileSpec
-
 '===============================================================================
+' # Declarations
 
-Private Type typeThis
+Private Type This
     Path As String
-    NameWithoutExt As String
+    BaseName As String
     Ext As String
 End Type
-Private This As typeThis
+Private This As This
 
 '===============================================================================
+' # Constructors
 
-Public Function Create(Optional ByVal File As String) As IFileSpec
-    With New FileSpec
-        Set Create = .Init(File)
-    End With
-End Function
-
-Friend Function Init(ByVal File As String) As IFileSpec
-    Set Init = Me
-    If File = vbNullString Then Exit Function
+Friend Sub Inject( _
+               Optional ByVal Path As String _
+           )
     With This
-        .Path = GetFilePath(File)
-        .NameWithoutExt = GetFileNameWithoutExt(GetFileName(File))
-        .Ext = GetFileExt(GetFileName(File))
+        RefreshFilePath Path
+        RefreshBaseName GetFileName(Path)
+        RefreshFileExt GetFileName(Path)
     End With
-End Function
+End Sub
 
 '===============================================================================
+' # Public
 
-Private Property Get IFileSpec_Ext() As String
-    IFileSpec_Ext = This.Ext
+Public Property Get Ext() As String
+    Ext = This.Ext
 End Property
-Private Property Let IFileSpec_Ext(ByVal RHS As String)
+Public Property Let Ext(ByVal RHS As String)
     This.Ext = RHS
 End Property
 
-Private Property Get IFileSpec_GetCopy() As IFileSpec
-    With FileSpec.Create
-        .Path = This.Path
-        .NameWithoutExt = This.NameWithoutExt
-        .Ext = This.Ext
-        Set IFileSpec_GetCopy = .Self
-    End With
-End Property
-
-Private Function IFileSpec_ToString() As String
+'@DefaultMember
+Public Function ToString() As String
+Attribute ToString.VB_UserMemId = 0
     With This
-        IFileSpec_ToString = .Path & .NameWithoutExt & AddDotIfNotEmpty(.Ext)
+        ToString = .Path & .BaseName & AddDotIfNotEmpty(.Ext)
     End With
 End Function
 
-Private Property Get IFileSpec_Name() As String
+Public Property Get Name() As String
     With This
-        IFileSpec_Name = .NameWithoutExt & AddDotIfNotEmpty(.Ext)
+        Name = .BaseName & AddDotIfNotEmpty(.Ext)
     End With
 End Property
-Private Property Let IFileSpec_Name(ByVal RHS As String)
+Public Property Let Name(ByVal RHS As String)
     With This
-        .NameWithoutExt = GetFileNameWithoutExt(RHS)
-        .Ext = GetFileExt(RHS)
+        RefreshBaseName RHS
+        RefreshFileExt RHS
     End With
 End Property
 
-Private Property Get IFileSpec_NameWithoutExt() As String
-    IFileSpec_NameWithoutExt = This.NameWithoutExt
+Public Property Get BaseName() As String
+    BaseName = This.BaseName
 End Property
-Private Property Let IFileSpec_NameWithoutExt(ByVal RHS As String)
-    This.NameWithoutExt = RHS
+Public Property Let BaseName(ByVal RHS As String)
+    This.BaseName = RHS
 End Property
 
-Private Property Get IFileSpec_Path() As String
-    IFileSpec_Path = This.Path
+Public Property Get Path() As String
+    Path = This.Path
 End Property
-Private Property Let IFileSpec_Path(ByVal RHS As String)
+Public Property Let Path(ByVal RHS As String)
     This.Path = AddProperEndingToPath(RHS)
 End Property
 
-Private Property Get IFileSpec_Self() As IFileSpec
-    Set IFileSpec_Self = Me
+Public Property Get Self() As FileSpec
+    Set Self = Me
 End Property
 
 '===============================================================================
+' # Helpers
+
+Private Sub RefreshFileExt(ByVal FileName As String)
+    This.Ext = _
+        VBA.Right$( _
+            FileName, _
+            VBA.Switch( _
+                VBA.InStr(FileName, ".") = 0, _
+                    0, _
+                VBA.InStr(FileName, ".") > 0, _
+                    VBA.Len(FileName) - VBA.InStrRev(FileName, ".")) _
+        )
+End Sub
+
+Private Sub RefreshBaseName(ByVal FileName As String)
+    This.BaseName = _
+        VBA.Left$( _
+            FileName, _
+            VBA.Switch( _
+                VBA.InStr(FileName, ".") = 0, _
+                    VBA.Len(FileName), _
+                VBA.InStr(FileName, ".") > 0, _
+                    VBA.InStrRev(FileName, ".") - 1) _
+        )
+End Sub
+
+Private Sub RefreshFilePath(ByVal FullFileName As String)
+    This.Path = VBA.Left$(FullFileName, VBA.InStrRev(FullFileName, "\"))
+End Sub
 
 Private Function AddProperEndingToPath(ByVal Path As String) As String
     If Not VBA.Right$(Path, 1) = "\" Then AddProperEndingToPath = Path & "\" _
     Else AddProperEndingToPath = Path
 End Function
 
-Private Function GetFileExt(FileName As String) As String
-    GetFileExt = VBA.Right$(FileName, _
-        VBA.Switch _
-            (VBA.InStr(FileName, ".") = 0, _
-                0, _
-            VBA.InStr(FileName, ".") > 0, _
-                VBA.Len(FileName) - VBA.InStrRev(FileName, ".")))
-End Function
-
 Private Function AddDotIfNotEmpty(ByVal Ext As String) As String
-    If Ext = "" Then AddDotIfNotEmpty = "" Else AddDotIfNotEmpty = "." & Ext
+    If Ext = vbNullString Then
+        AddDotIfNotEmpty = vbNullString
+    Else
+        AddDotIfNotEmpty = "." & Ext
+    End If
 End Function
 
 Private Function GetFileName(ByVal FullFileName As String) As String
@@ -119,17 +131,4 @@ Private Function GetFileName(ByVal FullFileName As String) As String
             FullFileName, _
             VBA.Len(FullFileName) - VBA.InStrRev(FullFileName, "\") _
         )
-End Function
-
-Private Function GetFileNameWithoutExt(ByVal FileName As String) As String
-    GetFileNameWithoutExt = VBA.Left$(FileName, _
-        VBA.Switch _
-            (VBA.InStr(FileName, ".") = 0, _
-                VBA.Len(FileName), _
-            VBA.InStr(FileName, ".") > 0, _
-                VBA.InStrRev(FileName, ".") - 1))
-End Function
-
-Private Function GetFilePath(ByVal FullFileName As String)
-    GetFilePath = VBA.Left$(FullFileName, VBA.InStrRev(FullFileName, "\"))
 End Function

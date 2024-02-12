@@ -1,7 +1,7 @@
 Attribute VB_Name = "LibCore"
 '===============================================================================
 '   Модуль          : LibCore
-'   Версия          : 2023.09.01
+'   Версия          : 2023.11.19
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Использован код : dizzy (из макроса CtC), Alex Vakulenko
 '                     и др.
@@ -668,7 +668,7 @@ End Property
 
 Public Property Get IsSubPath(ByRef MaybeSubPath As Variant) As Boolean
     If Not AssignedObject(MaybeSubPath) Then Exit Property
-    IsSubPath = TypeOf MaybeSubPath Is SubPath
+    IsSubPath = TypeOf MaybeSubPath Is Subpath
 End Property
 
 Public Property Get IsValidCurve(ByVal MaybeCurve As Variant) As Boolean
@@ -731,12 +731,30 @@ Public Property Get IsValidSubPath(ByVal MaybeSubPath As Variant) As Boolean
 Fail:
 End Property
 
+Public Property Get GetCombinedCurve(ByVal Shapes As ShapeRange) As Curve
+    Set GetCombinedCurve = CreateCurve(Shapes.FirstShape.Page.Parent.Parent)
+    Dim Shape As Shape
+    For Each Shape In Shapes
+        GetCombinedCurve.AppendCurve GetCurve(Shape)
+    Next Shape
+End Property
+
 Public Property Get GetCurve(ByVal MaybeShape As Variant) As Curve
     If Not IsShape(MaybeShape) Then GoTo Fail
     Dim Temp As Double
     On Error GoTo Fail
     Set GetCurve = MaybeShape.Curve
     On Error GoTo 0
+Fail:
+End Property
+
+Public Property Get HasDiplayCurve(ByVal MaybeShape As Variant) As Boolean
+    If Not IsShape(MaybeShape) Then GoTo Fail
+    Dim Temp As Double
+    On Error GoTo Fail
+    Temp = MaybeShape.DisplayCurve.Length
+    On Error GoTo 0
+    HasDiplayCurve = Temp > 0
 Fail:
 End Property
 
@@ -803,6 +821,10 @@ Public Property Get NumberToFitArea( _
                     ) As Long
     NumberToFitArea = VBA.Fix(Area.Width / BoxToFit.Width) _
                     * VBA.Fix(Area.Height / BoxToFit.Height)
+End Property
+
+Public Property Get PixelsToDocUnits(ByVal SizeInPixels As Long) As Double
+    PixelsToDocUnits = ConvertUnits(SizeInPixels, cdrPixel, ActiveDocument.Unit)
 End Property
 
 Public Property Get ShapeHasOutline(ByVal Shape As Shape) As Boolean
@@ -969,7 +991,7 @@ Public Property Get HasPosition(ByRef MaybeSome As Variant) As Boolean
     If TypeOf MaybeSome Is Page Then GoTo Success
     If TypeOf MaybeSome Is Rect Then GoTo Success
     If TypeOf MaybeSome Is Node Then GoTo Success
-    If TypeOf MaybeSome Is SubPath Then GoTo Success
+    If TypeOf MaybeSome Is Subpath Then GoTo Success
     Exit Property
 Success:
     HasPosition = True
@@ -1294,12 +1316,19 @@ Public Function MoveToLayer( _
 
 End Function
 
+Public Sub ResizeImageToDocumentResolution(ByVal ImageShape As Shape)
+    With ImageShape.Bitmap
+        ImageShape.SetSize _
+            PixelsToDocUnits(.SizeWidth), PixelsToDocUnits(.SizeHeight)
+    End With
+End Sub
+
 'удаление сегмента
 'автор: Alex Vakulenko http://www.oberonplace.com/vba/drawmacros/delsegment.htm
 Public Sub SegmentDelete(ByVal Segment As Segment)
     If Not Segment.EndNode.IsEnding Then
         Segment.EndNode.BreakApart
-        Set Segment = Segment.SubPath.LastSegment
+        Set Segment = Segment.Subpath.LastSegment
     End If
     Segment.EndNode.Delete
 End Sub
@@ -1395,6 +1424,17 @@ Public Function AddProperEndingToPath(ByVal Path As String) As String
     Else: AddProperEndingToPath = Path
 End Function
 
+Private Sub CreateNestedFolders(ByVal Path As String)
+    Dim Subpath As Variant
+    Dim StrCheckPath As String
+    For Each Subpath In VBA.Split(Path, "\")
+        StrCheckPath = StrCheckPath & Subpath & "\"
+        If VBA.Dir(StrCheckPath, vbDirectory) = vbNullString Then
+            VBA.MkDir StrCheckPath
+        End If
+    Next
+End Sub
+
 'существует ли файл или папка (папка должна заканчиваться на "\")
 Public Property Get FileExists(ByVal File As String) As Boolean
     If File = "" Then Exit Property
@@ -1458,8 +1498,15 @@ End Property
 'создаёт папку, если не было
 'возвращает Path обратно (для inline-использования)
 Public Function MakeDir(ByVal Path As String) As String
-    If VBA.Dir(Path, vbDirectory) = "" Then MkDir Path
+    If Not FSO.FolderExists(Path) Then MkDir Path
     MakeDir = Path
+End Function
+
+'создаёт путь, если не было
+'возвращает Path обратно (для inline-использования)
+Public Function MakePath(ByVal Path As String) As String
+    If Not FSO.FolderExists(Path) Then CreateNestedFolders Path
+    MakePath = Path
 End Function
 
 'загружает файл в строку

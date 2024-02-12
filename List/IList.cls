@@ -13,19 +13,25 @@ Option Explicit
 
 '===============================================================================
 
-Public Sub Add(ByRef Item As Variant, _
+Public Sub Add( _
+               ByRef Item As Variant, _
                Optional ByVal Before As Long, _
-               Optional ByVal After As Long)
+               Optional ByVal After As Long _
+           )
 End Sub
 
-Public Sub Append(ByVal List As IList, _
-                  Optional ByVal Before As Long, _
-                  Optional ByVal After As Long)
+Public Sub Append( _
+               ByVal List As IList, _
+               Optional ByVal Before As Long, _
+               Optional ByVal After As Long _
+           )
 End Sub
 
-Public Sub AppendCollection(ByVal Collection As VBA.Collection, _
-                            Optional ByVal Before As Long, _
-                            Optional ByVal After As Long)
+Public Sub AppendCollection( _
+               ByVal Collection As VBA.Collection, _
+               Optional ByVal Before As Long, _
+               Optional ByVal After As Long _
+           )
 End Sub
 
 Public Sub Remove(ByVal Index As Long)
@@ -58,7 +64,7 @@ End Property
 Public Property Set Item(ByVal Index As Long, ByVal RHS As Variant)
 End Property
 
-Public Property Get NewEnum() As EnumHelper
+Public Property Get Items() As Variant
 End Property
 
 '===============================================================================

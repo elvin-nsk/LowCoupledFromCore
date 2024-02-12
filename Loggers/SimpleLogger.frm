@@ -13,9 +13,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
 '===============================================================================
 ' Форма            : SimpleLogger
-' Версия           : 2023.08.28
+' Версия           : 2023.11.07
 ' Автор            : elvin-nsk (me@elvin.nsk.ru)
 ' Назначение:      : ведение лога событий и ошибок
 '===============================================================================
@@ -24,20 +25,16 @@ Option Explicit
 
 '===============================================================================
 
-Private Type typeThis
-  Messages() As String
+Private Type This
   MessagesCount As Long
 End Type
-Private This As typeThis
+Private This As This
 
 '===============================================================================
 
-'добавить сообщение в лог, с опциональной привязкой к объекту
 Public Sub Add(ByVal Text As String)
   This.MessagesCount = This.MessagesCount + 1
-  ReDim Preserve This.Messages(1 To This.MessagesCount)
-  This.Messages(This.MessagesCount) = Text
-  lstMain.AddItem Text
+  Report.Value = Report.Value & Text & vbCrLf
 End Sub
 
 Public Property Get Count()
@@ -49,8 +46,7 @@ Public Sub Check(Optional ByVal ListCaption As String = "Лог")
   If This.MessagesCount = 0 Then Exit Sub
   Caption = ListCaption
   Show vbModeless
-  lstMain.SetFocus
-  lstMain.ListIndex = 0
+  Report.SetFocus
 End Sub
 
 '===============================================================================
