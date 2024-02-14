@@ -7,33 +7,31 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+'@Interface
 '@PredeclaredId
 Option Explicit
 
-Implements IComposerElement
-
 '===============================================================================
 
-Private Type typeThis
+Private Type This
     Shapes As ShapeRange
     IsShape As Boolean
     Name As String
 End Type
-Private This As typeThis
+Private This As This
 
 '===============================================================================
 
-Public Function Create( _
+Friend Function New_( _
                     ByVal ShapeOrRange As Object _
                 ) As ComposerElement
-    With New ComposerElement
-        Set Create = .Init(ShapeOrRange)
-    End With
+    Set New_ = New ComposerElement
+    New_.Inject ShapeOrRange
 End Function
 
-Friend Function Init( _
+Friend Sub Inject( _
                     ByVal ShapeOrRange As Object _
-                ) As ComposerElement
+                )
     With This
         If TypeOf ShapeOrRange Is Shape Then
             Set .Shapes = New ShapeRange
@@ -47,39 +45,38 @@ Friend Function Init( _
                 Description:="Type mismatch: ShapeOrRange должен быть Shape или ShapeRange"
         End If
         End With
-    Set Init = Me
-End Function
+End Sub
 
 '===============================================================================
 
-Private Property Get IComposerElement_Height() As Double
-    IComposerElement_Height = This.Shapes.SizeHeight
+Public Property Get Height() As Double
+    Height = This.Shapes.SizeHeight
 End Property
 
-Private Property Let IComposerElement_PivotX(ByVal RHS As Double)
+Public Property Let PivotX(ByVal RHS As Double)
     This.Shapes.LeftX = RHS
 End Property
-Private Property Get IComposerElement_PivotX() As Double
-    IComposerElement_PivotX = This.Shapes.LeftX
+Public Property Get PivotX() As Double
+    PivotX = This.Shapes.LeftX
 End Property
 
-Private Property Let IComposerElement_PivotY(ByVal RHS As Double)
+Public Property Let PivotY(ByVal RHS As Double)
     This.Shapes.TopY = RHS
 End Property
-Private Property Get IComposerElement_PivotY() As Double
-    IComposerElement_PivotY = This.Shapes.TopY
+Public Property Get PivotY() As Double
+    PivotY = This.Shapes.TopY
 End Property
 
-Private Property Get IComposerElement_Width() As Double
-    IComposerElement_Width = This.Shapes.SizeWidth
+Public Property Get Width() As Double
+    Width = This.Shapes.SizeWidth
 End Property
 
-Private Property Get IComposerElement_Shapes() As ShapeRange
-    Set IComposerElement_Shapes = This.Shapes
+Public Property Get Self() As ComposerElement
+    Set Self = Me
 End Property
 
-Private Property Get IComposerElement_Self() As IComposerElement
-    Set IComposerElement_Self = Me
+Public Property Get Shapes() As ShapeRange
+    Set Shapes = This.Shapes
 End Property
 
 '===============================================================================

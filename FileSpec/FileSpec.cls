@@ -5,9 +5,19 @@ END
 Attribute VB_Name = "FileSpec"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-'@Folder System
+'===============================================================================
+'   Модуль          : FileSpec
+'   Версия          : 2024.02.12
+'   Автор           : elvin-nsk (me@elvin.nsk.ru)
+'   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
+'   Назначение      : Хранит имя файла и путь
+'   Зависимости     : Нет
+'===============================================================================
+
+'@Interface
+'@PredeclaredId
 Option Explicit
 
 '===============================================================================
@@ -23,8 +33,13 @@ Private This As This
 '===============================================================================
 ' # Constructors
 
+Friend Function New_(Optional ByVal File As String) As FileSpec
+    Set New_ = New FileSpec
+    New_.Inject File
+End Function
+
 Friend Sub Inject( _
-               Optional ByVal Path As String _
+               Optional ByVal File As String _
            )
     With This
         RefreshFilePath Path
@@ -41,6 +56,15 @@ Public Property Get Ext() As String
 End Property
 Public Property Let Ext(ByVal RHS As String)
     This.Ext = RHS
+End Property
+
+Public Property Get GetCopy() As FileSpec
+    With New FileSpec
+        .Path = This.Path
+        .BaseName = This.BaseName
+        .Ext = This.Ext
+        Set GetCopy = .Self
+    End With
 End Property
 
 '@DefaultMember

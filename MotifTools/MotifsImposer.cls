@@ -9,12 +9,12 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '===============================================================================
 '   Модуль          : MotifsImposer
-'   Версия          : 2023.11.07
+'   Версия          : 2024.02.14
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
 '   Назначение      :
-'   Зависимости     : LibCore, Composer, IComposerElement,
-'                     Motif, Surface, IPoint, MarksSetter
+'   Зависимости     : LibCore, Composer, ComposerElement,
+'                     Motif, Surface, Point, FileSpec, MarksSetter
 '===============================================================================
 
 '@ModuleDescription("MotifsImposer.")
@@ -40,6 +40,7 @@ Private Type This
     MaxPlacesInWidth As Long
     MotifsToImport As Variant
     PlaceCropMarks As Boolean
+    PlacesTotalCounter As Long
     PlaceWhiteBackground As Boolean
     ReferencePoint As cdrReferencePoint
     RemainingElements As Collection
@@ -55,18 +56,18 @@ Private Const BACKGROUND_MARK As String = "подложка"
 '===============================================================================
 ' # Events
 
-Public Event OnImportShape(ByRef ioShape As Shape)
-Public Event OnPageImposed()
+Public Event OnImportSurface(ByVal Surface As Surface)
+Public Event OnPageImposed(ByVal Page As Page)
 
 '===============================================================================
 ' # Constructors
 
-Public Function CreateFromImport( _
+Public Function NewFromImport( _
                     ByRef Motifs As Variant, _
                     Optional ByVal TwoSided As Boolean = False _
                 ) As MotifsImposer
-    Set CreateFromImport = New MotifsImposer
-    CreateFromImport.Inject Motifs, TwoSided
+    Set NewFromImport = New MotifsImposer
+    NewFromImport.Inject Motifs, TwoSided
 End Function
 
 Friend Sub Inject( _
@@ -175,6 +176,10 @@ Public Property Let PlaceCropMarks(RHS As Boolean)
     This.PlaceCropMarks = RHS
 End Property
 
+Public Property Get PlacesTotal() As Long
+    PlacesTotal = This.PlacesTotalCounter
+End Property
+
 Public Property Get PlaceWhiteBackground() As Boolean
     PlaceWhiteBackground = This.PlaceWhiteBackground
 End Property
@@ -226,7 +231,7 @@ Private Sub Impose( _
         Set Elements = .Elements
         
         Dim ImpositionIndex As Long
-        Dim LastPivot As IPoint
+        Dim LastPivot As Point
         Dim LastCount As Long
         Dim LastIteration As Boolean
         Dim ComposedShapes As ShapeRange
@@ -240,9 +245,9 @@ Private Sub Impose( _
         Do
             ImpositionIndex = ImpositionIndex + 1
             Set ElementsComposer = _
-                Composer.CreateAndCompose( _
+                Composer.NewAndCompose( _
                     Elements:=Elements, _
-                    StartingPoint:=FreePoint.Create(-20000, 20000), _
+                    StartingPoint:=Point.New_(-20000, 20000), _
                     MaxPlacesInWidth:=MaxPlacesInWidth, _
                     MaxPlacesInHeight:=MaxPlacesInHeight, _
                     MaxWidth:=ImpositionArea.Width, _
@@ -257,10 +262,11 @@ Private Sub Impose( _
             Set LastPivot = _
                 AlignImposition(ComposedShapes, ImpositionArea, LastPivot)
             LastCount = ElementsComposer.ComposedElements.Count
-            
-            RaiseEvent OnPageImposed
                           
-            If Not AutoAddPages Then Exit Do
+            If Not AutoAddPages Then
+                RaiseEvent OnPageImposed(ActivePage)
+                Exit Do
+            End If
             
             RawImpositionRanges.Add ComposedShapes
             Set Elements = ElementsComposer.RemainingElements
@@ -297,18 +303,18 @@ End Property
 Private Function AlignImposition( _
                 ByVal ComposedShapes As ShapeRange, _
                 ByVal ImpositionArea As Rect, _
-                ByVal Pivot As IPoint _
-            ) As IPoint
+                ByVal Pivot As Point _
+            ) As Point
     If Pivot Is Nothing Then
         Align ComposedShapes, ImpositionArea, This.ReferencePoint
         Set AlignImposition = _
-            FreePoint.Create( _
+            Point.New_( _
                 ComposedShapes.LeftX, _
                 ComposedShapes.TopY _
             )
     Else
-        ComposedShapes.LeftX = Pivot.X
-        ComposedShapes.TopY = Pivot.Y
+        ComposedShapes.LeftX = Pivot.x
+        ComposedShapes.TopY = Pivot.y
     End If
 End Function
 
@@ -318,13 +324,13 @@ Private Sub AddRandomElements( _
             )
     VBA.Randomize
     Dim Index As Long
-    Dim RandomElement As IComposerElement
+    Dim RandomElement As ComposerElement
     Dim Shapes As ShapeRange
-    Dim NewElement As IComposerElement
+    Dim NewElement As ComposerElement
     For Index = 1 To Number
         Set RandomElement = This.Elements(RndInt(1, This.Elements.Count))
         Set Shapes = RandomElement.Shapes.Duplicate
-        Set NewElement = ComposerElement.Create(Shapes)
+        Set NewElement = ComposerElement.New_(Shapes)
         ioElements.Add NewElement
     Next Index
 End Sub
@@ -364,11 +370,13 @@ Private Function DistributeByMultiplePages( _
     If ImpositionRanges.Count > 1 Then _
         ActiveDocument.AddPages ImpositionRanges.Count - 1
     ActiveDocument.Pages(StartingPageIndex).Activate
+    RaiseEvent OnPageImposed(ActivePage)
     For Index = 2 To ImpositionRanges.Count
         Set Shapes = ImpositionRanges(Index)
         Set Page = ActiveDocument.Pages(Index + StartingPageIndex - 1)
         DistributeByMultiplePages.Add Page
         Shapes.MoveToLayer Page.ActiveLayer
+        RaiseEvent OnPageImposed(Page)
     Next Index
             
 End Function
@@ -415,7 +423,7 @@ Private Sub PlaceCropMarksOnImpositions(ByVal ImpositionRanges As Collection)
     Dim Shape As Shape
     For Each Range In ImpositionRanges
         Range.FirstShape.Page.Activate
-        With MarksSetter.Create(Range)
+        With MarksSetter.New_(Range)
             .Bleeds = This.Bleeds
             .PlaceWhiteUndermark = False
             .Size = 3
@@ -428,14 +436,14 @@ Private Function ShapesToElements(ByVal Shapes As ShapeRange) As Collection
     Dim Shape As Shape
     Set ShapesToElements = New Collection
     For Each Shape In Shapes
-        ShapesToElements.Add ComposerElement.Create(Shape)
+        ShapesToElements.Add ComposerElement.New_(Shape)
     Next Shape
 End Function
 
 Private Function ElementsToShapes( _
                      ByVal ComposerElements As Collection _
                  ) As ShapeRange
-    Dim Item As IComposerElement
+    Dim Item As ComposerElement
     Set ElementsToShapes = New ShapeRange
     For Each Item In ComposerElements
         ElementsToShapes.AddRange Item.Shapes
@@ -461,13 +469,14 @@ Private Function ImportAsMarkedShapes( _
     Dim ShapesToElement As ShapeRange
     Set ImportAsMarkedShapes = CreateShapeRange
     With Motif
-        Set .SurfaceA.Content = ImportSurface(.SurfaceA)
+        This.PlacesTotalCounter = This.PlacesTotalCounter + .Quantity
+        ImportContent .SurfaceA
         If This.PlaceWhiteBackground Then AddWhiteBackground .SurfaceA.Content
         .SurfaceA.Content.Name = SIDE_A_MARK
         ImportAsMarkedShapes.Add .SurfaceA.Content
         If This.TwoSided Then
             If .HasSurfaceB Then
-                Set .SurfaceB.Content = ImportSurface(.SurfaceB)
+                ImportContent (.SurfaceB)
                 If This.PlaceWhiteBackground Then AddWhiteBackground .SurfaceB.Content
             Else
                 Set .SurfaceB.Content = _
@@ -488,21 +497,19 @@ Private Function DuplicateRangesAsElements( _
                      ByVal Quantity As Long _
                  ) As Collection
     Set DuplicateRangesAsElements = New Collection
-    DuplicateRangesAsElements.Add ComposerElement.Create(Range)
+    DuplicateRangesAsElements.Add ComposerElement.New_(Range)
     If Quantity = 1 Then Exit Function
     Dim Index As Long
     For Index = 1 To Quantity - 1
-        DuplicateRangesAsElements.Add ComposerElement.Create(Range.Duplicate)
+        DuplicateRangesAsElements.Add ComposerElement.New_(Range.Duplicate)
     Next Index
 End Function
 
-Private Function ImportSurface(ByVal Surface As Surface) As Shape
-    Dim Shape As Shape
+Private Sub ImportContent(ByVal Surface As Surface)
     ActiveLayer.Import Surface.File
-    Set Shape = ActiveShape
-    RaiseEvent OnImportShape(Shape)
-    Set ImportSurface = Shape
-End Function
+    Set Surface.Content = ActiveShape
+    RaiseEvent OnImportSurface(Surface)
+End Sub
 
 Private Sub AddWhiteBackground(ByRef ioShape As Shape)
     Dim BGShape As Shape
@@ -546,7 +553,7 @@ Private Property Get TopMarginY() As Double
 End Property
 
 Public Sub MotifOrThrow(ByRef MaybeMotif As Variant)
-    If Not AssignedObject(MaybeMotif) Then GoTo Fail
+    If Not ObjectAssigned(MaybeMotif) Then GoTo Fail
     If Not TypeOf MaybeMotif Is Motif Then GoTo Fail
     Exit Sub
 Fail:

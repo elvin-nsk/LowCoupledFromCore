@@ -1,7 +1,7 @@
 Attribute VB_Name = "LibCore"
 '===============================================================================
 '   Модуль          : LibCore
-'   Версия          : 2023.11.19
+'   Версия          : 2024.02.12
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Использован код : dizzy (из макроса CtC), Alex Vakulenko
 '                     и др.
@@ -223,18 +223,18 @@ Private Sub AddFontToCollection( _
 End Sub
 
 Public Property Get DiffWithinTolerance( _
-                     ByVal Number1 As Variant, _
-                     ByVal Number2 As Variant, _
-                     ByVal Tolerance As Variant _
-                 ) As Boolean
+                        ByVal Number1 As Variant, _
+                        ByVal Number2 As Variant, _
+                        ByVal Tolerance As Variant _
+                    ) As Boolean
     DiffWithinTolerance = VBA.Abs(Number1 - Number2) < Tolerance
 End Property
 
 'возвращает все шейпы на всех слоях текущей страницы, по умолчанию - без мастер-слоёв и без гайдов
 Public Property Get FindShapesActivePageLayers( _
-                    Optional ByVal GuidesLayers As Boolean, _
-                    Optional ByVal MasterLayers As Boolean _
-                ) As ShapeRange
+                        Optional ByVal GuidesLayers As Boolean, _
+                        Optional ByVal MasterLayers As Boolean _
+                    ) As ShapeRange
     Dim tLayer As Layer
     Set FindShapesActivePageLayers = CreateShapeRange
     For Each tLayer In ActivePage.Layers
@@ -250,9 +250,9 @@ Public Property Get FindShapesActivePageLayers( _
 End Property
 
 Public Property Get FindShapesWithText( _
-                     ByVal Source As ShapeRange, _
-                     ByVal Text As String _
-                 ) As ShapeRange
+                        ByVal Source As ShapeRange, _
+                        ByVal Text As String _
+                    ) As ShapeRange
     Dim TextShapes As ShapeRange
     Set TextShapes = Source.Shapes.FindShapes(Type:=cdrTextShape)
     Set FindShapesWithText = CreateShapeRange
@@ -265,9 +265,9 @@ End Property
 
 'возвращает коллекцию слоёв с текущей страницы, имена которых включают NamePart
 Public Property Get FindLayersActivePageByNamePart( _
-                    ByVal NamePart As String, _
-                    Optional ByVal SearchMasters = True _
-                ) As Collection
+                        ByVal NamePart As String, _
+                        Optional ByVal SearchMasters = True _
+                    ) As Collection
     Dim tLayer As Layer
     Dim tLayers As Layers
     If SearchMasters Then
@@ -284,9 +284,9 @@ End Property
 
 'найти дубликат слоя по ряду параметров (достовернее, чем поиск по имени)
 Public Property Get FindLayerDuplicate( _
-                    ByVal PageToSearch As Page, _
-                    ByVal SrcLayer As Layer _
-                ) As Layer
+                        ByVal PageToSearch As Page, _
+                        ByVal SrcLayer As Layer _
+                    ) As Layer
     For Each FindLayerDuplicate In PageToSearch.AllLayers
         With FindLayerDuplicate
             If (.Name = SrcLayer.Name) And _
@@ -320,10 +320,10 @@ Public Property Get GetAverageColor(ByVal Colors As Collection) As Color
 End Property
 
 Public Property Get GetAverageColorFromShapes( _
-                    ByVal Shapes As ShapeRange, _
-                    Optional ByVal Fills As Boolean = True, _
-                    Optional ByVal Outlines As Boolean = True _
-                ) As Color
+                        ByVal Shapes As ShapeRange, _
+                        Optional ByVal Fills As Boolean = True, _
+                        Optional ByVal Outlines As Boolean = True _
+                    ) As Color
     On Error GoTo NoColor
     Set GetAverageColorFromShapes = GetAverageColor( _
         GetBoundColors( _
@@ -336,10 +336,10 @@ NoColor:
 End Property
 
 Public Property Get GetBoundColors( _
-                    ByVal Shapes As ShapeRange, _
-                    Optional ByVal Fills As Boolean = True, _
-                    Optional ByVal Outlines As Boolean = True _
-                ) As Collection
+                        ByVal Shapes As ShapeRange, _
+                        Optional ByVal Fills As Boolean = True, _
+                        Optional ByVal Outlines As Boolean = True _
+                    ) As Collection
     Set GetBoundColors = New Collection
     Dim Shape As Shape
     For Each Shape In Shapes
@@ -353,8 +353,8 @@ Public Property Get GetBoundColors( _
 End Property
 
 Public Property Get GetBoundColorsFromFill( _
-                    ByVal Shape As Shape _
-                ) As Collection
+                        ByVal Shape As Shape _
+                    ) As Collection
     Set GetBoundColorsFromFill = New Collection
     With Shape.Fill
         If Shape.Fill.Type = cdrUniformFill Then
@@ -372,8 +372,8 @@ Public Property Get GetBoundColorsFromFill( _
 End Property
 
 Public Property Get GetBoundColorsFromFountain( _
-                    ByVal Shape As Shape _
-                ) As Collection
+                        ByVal Shape As Shape _
+                    ) As Collection
     Set GetBoundColorsFromFountain = New Collection
     Dim FColor As FountainColor
     For Each FColor In Shape.Fill.Fountain.Colors
@@ -382,8 +382,8 @@ Public Property Get GetBoundColorsFromFountain( _
 End Property
 
 Public Property Get GetBoundColorsFromTwoColorPattern( _
-                     ByVal Shape As Shape _
-                 ) As Collection
+                        ByVal Shape As Shape _
+                    ) As Collection
     Set GetBoundColorsFromTwoColorPattern = New Collection
     GetBoundColorsFromTwoColorPattern.Add Shape.Fill.Pattern.FrontColor
     GetBoundColorsFromTwoColorPattern.Add Shape.Fill.Pattern.BackColor
@@ -409,19 +409,19 @@ Public Property Get GetColorLightness(ByVal Color As Color) As Long
 End Property
 
 Public Property Get GetHeightKeepProportions( _
-                    ByVal Rect As Rect, _
-                    ByVal Width As Double _
-                ) As Double
+                        ByVal Rect As Rect, _
+                        ByVal Width As Double _
+                    ) As Double
     Dim WidthToHeight As Double
     WidthToHeight = Rect.Width / Rect.Height
     GetHeightKeepProportions = Width / WidthToHeight
 End Property
 
 Public Property Get GetMixedColor( _
-                    ByVal MaybeColor1 As Variant, _
-                    ByVal MaybeColor2 As Variant, _
-                    Optional ByVal MixRatio As Long = 50 _
-                ) As Color
+                        ByVal MaybeColor1 As Variant, _
+                        ByVal MaybeColor2 As Variant, _
+                        Optional ByVal MixRatio As Long = 50 _
+                    ) As Color
     If Not (IsColor(MaybeColor1) Or IsColor(MaybeColor2)) Then Exit Property
     If Not IsColor(MaybeColor1) Then
         Set GetMixedColor = MaybeColor2.GetCopy
@@ -465,7 +465,9 @@ End Property
 
 'возвращает бОльшую сторону шейпа/рэйнджа/страницы
 Public Property Get GreaterDim(ByVal ShapeOrRangeOrPage As Object) As Double
-    If Not TypeOf ShapeOrRangeOrPage Is Shape And Not TypeOf ShapeOrRangeOrPage Is ShapeRange And Not TypeOf ShapeOrRangeOrPage Is Page Then
+    If Not TypeOf ShapeOrRangeOrPage Is Shape _
+   And Not TypeOf ShapeOrRangeOrPage Is ShapeRange _
+   And Not TypeOf ShapeOrRangeOrPage Is Page Then
         Err.Raise 13, Source:="GreaterDim", _
                   Description:="Type mismatch: ShapeOrRangeOrPage должен быть Shape, ShapeRange или Page"
         Exit Property
@@ -478,17 +480,17 @@ Public Property Get GreaterDim(ByVal ShapeOrRangeOrPage As Object) As Double
 End Property
 
 Public Property Get IsColor(ByRef MaybeColor As Variant) As Boolean
-    If Not AssignedObject(MaybeColor) Then Exit Property
+    If Not ObjectAssigned(MaybeColor) Then Exit Property
     IsColor = TypeOf MaybeColor Is Color
 End Property
 
 Public Property Get IsCurve(ByRef MaybeCurve As Variant) As Boolean
-    If Not AssignedObject(MaybeCurve) Then Exit Property
+    If Not ObjectAssigned(MaybeCurve) Then Exit Property
     IsCurve = TypeOf MaybeCurve Is Curve
 End Property
 
 Public Property Get IsDocument(ByRef MaybeDocument As Variant) As Boolean
-    If Not AssignedObject(MaybeDocument) Then Exit Property
+    If Not ObjectAssigned(MaybeDocument) Then Exit Property
     IsDocument = TypeOf MaybeDocument Is Document
 End Property
 
@@ -514,15 +516,15 @@ Public Property Get IsLandscape(ByVal ShapeOrRangeOrPage As Object) As Boolean
 End Property
 
 Public Property Get IsLayer(ByRef MaybeLayer As Variant) As Boolean
-    If Not AssignedObject(MaybeLayer) Then Exit Property
+    If Not ObjectAssigned(MaybeLayer) Then Exit Property
     IsLayer = TypeOf MaybeLayer Is Layer
 End Property
 
 'todo: ПРОВЕРИТЬ КАК СЛЕДУЕТ
 Public Property Get IsOverlap( _
-                    ByVal FirstShape As Shape, _
-                    ByVal SecondShape As Shape _
-                ) As Boolean
+                        ByVal FirstShape As Shape, _
+                        ByVal SecondShape As Shape _
+                    ) As Boolean
     
     Dim tIS As Shape
     Dim tShape1 As Shape, tShape2 As Shape
@@ -575,9 +577,9 @@ End Property
 'IsOverlap здорового человека - меряет по габаритам,
 'но зато стабильно работает и в большинстве случаев его достаточно
 Public Property Get IsOverlapBox( _
-                    ByVal FirstShape As Shape, _
-                    ByVal SecondShape As Shape _
-                ) As Boolean
+                        ByVal FirstShape As Shape, _
+                        ByVal SecondShape As Shape _
+                    ) As Boolean
     Dim tShape As Shape
     Dim tProps As typeLayerProps
     'запоминаем какой слой был активным
@@ -598,19 +600,19 @@ Public Property Get IsOverlapBox( _
 End Property
 
 Public Property Get IsPage(ByRef MaybePage As Variant) As Boolean
-    If Not AssignedObject(MaybePage) Then Exit Property
+    If Not ObjectAssigned(MaybePage) Then Exit Property
     IsPage = TypeOf MaybePage Is Page
 End Property
 
 Public Property Get IsRect(ByRef MaybeRect As Variant) As Boolean
-    If Not AssignedObject(MaybeRect) Then Exit Property
+    If Not ObjectAssigned(MaybeRect) Then Exit Property
     IsRect = TypeOf MaybeRect Is Rect
 End Property
 
 Public Property Get IsSameColor( _
-                    ByVal MaybeColor1 As Variant, _
-                    ByVal MaybeColor2 As Variant _
-                ) As Boolean
+                        ByVal MaybeColor1 As Variant, _
+                        ByVal MaybeColor2 As Variant _
+                    ) As Boolean
     If VBA.IsEmpty(MaybeColor1) Or VBA.IsEmpty(MaybeColor2) Then Exit Property
     IsSameColor = MaybeColor1.IsSame(MaybeColor2)
 End Property
@@ -618,9 +620,9 @@ End Property
 'являются ли кривые дубликатами, находящимися друг над другом в одном месте
 '(underlying dubs)
 Public Property Get IsSameCurves( _
-                    ByVal Curve1 As Curve, _
-                    ByVal Curve2 As Curve _
-                ) As Boolean
+                        ByVal Curve1 As Curve, _
+                        ByVal Curve2 As Curve _
+                    ) As Boolean
     Dim tNode As Node
     Dim Tolerance As Double
     'допуск = 0.001 мм
@@ -639,35 +641,35 @@ Public Property Get IsSameCurves( _
 End Property
 
 Public Property Get IsNode(ByRef MaybeNode As Variant) As Boolean
-    If Not AssignedObject(MaybeNode) Then Exit Property
+    If Not ObjectAssigned(MaybeNode) Then Exit Property
     IsNode = TypeOf MaybeNode Is Node
 End Property
 
 Public Property Get IsSegment(ByRef MaybeSegment As Variant) As Boolean
-    If Not AssignedObject(MaybeSegment) Then Exit Property
+    If Not ObjectAssigned(MaybeSegment) Then Exit Property
     IsSegment = TypeOf MaybeSegment Is Segment
 End Property
 
 Public Property Get IsShape(ByRef MaybeShape As Variant) As Boolean
-    If Not AssignedObject(MaybeShape) Then Exit Property
+    If Not ObjectAssigned(MaybeShape) Then Exit Property
     IsShape = TypeOf MaybeShape Is Shape
 End Property
 
 Public Property Get IsShapeRange(ByRef MaybeShapeRange As Variant) As Boolean
-    If Not AssignedObject(MaybeShapeRange) Then Exit Property
+    If Not ObjectAssigned(MaybeShapeRange) Then Exit Property
     IsShapeRange = TypeOf MaybeShapeRange Is ShapeRange
 End Property
 
 Public Property Get IsShapeType( _
-                    ByVal MaybeShape As Variant, _
-                    ByVal ShapeType As cdrShapeType _
-                ) As Boolean
+                        ByVal MaybeShape As Variant, _
+                        ByVal ShapeType As cdrShapeType _
+                    ) As Boolean
     If Not IsShape(MaybeShape) Then Exit Property
     IsShapeType = (MaybeShape.Type = ShapeType)
 End Property
 
 Public Property Get IsSubPath(ByRef MaybeSubPath As Variant) As Boolean
-    If Not AssignedObject(MaybeSubPath) Then Exit Property
+    If Not ObjectAssigned(MaybeSubPath) Then Exit Property
     IsSubPath = TypeOf MaybeSubPath Is Subpath
 End Property
 
@@ -876,10 +878,10 @@ End Property
 
 'возвращает Rect, равный габаритам объекта плюс Space со всех сторон
 Public Property Get SpaceBox( _
-                    ByVal MaybeHasSize As Variant, _
-                    ByVal Space As Double _
-                ) As Rect
-    If Not AssignedObject(MaybeHasSize) Then Exit Property
+                        ByVal MaybeHasSize As Variant, _
+                        ByVal Space As Double _
+                    ) As Rect
+    If Not ObjectAssigned(MaybeHasSize) Then Exit Property
     If TypeOf MaybeHasSize Is Shape Then
         Set SpaceBox = MaybeHasSize.BoundingBox.GetCopy
     ElseIf TypeOf MaybeHasSize Is ShapeRange Then
@@ -974,7 +976,7 @@ Public Sub Align( _
 End Sub
 
 Public Property Get HasSize(ByRef MaybeSome As Variant) As Boolean
-    If Not AssignedObject(MaybeSome) Then Exit Property
+    If Not ObjectAssigned(MaybeSome) Then Exit Property
     If TypeOf MaybeSome Is Shape Then GoTo Success
     If TypeOf MaybeSome Is ShapeRange Then GoTo Success
     If TypeOf MaybeSome Is Page Then GoTo Success
@@ -985,7 +987,7 @@ Success:
 End Property
 
 Public Property Get HasPosition(ByRef MaybeSome As Variant) As Boolean
-    If Not AssignedObject(MaybeSome) Then Exit Property
+    If Not ObjectAssigned(MaybeSome) Then Exit Property
     If TypeOf MaybeSome Is Shape Then GoTo Success
     If TypeOf MaybeSome Is ShapeRange Then GoTo Success
     If TypeOf MaybeSome Is Page Then GoTo Success
@@ -996,9 +998,6 @@ Public Property Get HasPosition(ByRef MaybeSome As Variant) As Boolean
 Success:
     HasPosition = True
 End Property
-
-
-
 
 Public Function BreakApart(ByVal Shape As Shape) As ShapeRange
     If Shape.Curve.SubPaths.Count < 2 Then
@@ -1345,10 +1344,10 @@ Public Sub SetOutlineColor( _
 End Sub
 
 Public Sub SwapOrientation(ByVal Page As Page)
-    Dim X As Variant
-    X = Page.SizeHeight
+    Dim x As Variant
+    x = Page.SizeHeight
     Page.SizeHeight = Page.SizeWidth
-    Page.SizeWidth = X
+    Page.SizeWidth = x
 End Sub
 
 Public Sub Trim( _
@@ -1603,18 +1602,18 @@ Public Sub AppendCollection( _
     Next Item
 End Sub
 
-Public Sub Assign(ByRef Destination As Variant, ByRef Value As Variant)
-    If VBA.IsObject(Value) Then
-        Set Destination = Value
+Public Sub Assign(ByRef Destination As Variant, ByVal x As Variant)
+    If VBA.IsObject(x) Then
+        Set Destination = x
     Else
-        Destination = Value
+        Destination = x
     End If
 End Sub
 
 'возвращает True, если Value - это объект и при этом не Nothing
-Public Property Get AssignedObject(ByRef Variable As Variant) As Boolean
+Public Property Get ObjectAssigned(ByRef Variable As Variant) As Boolean
     If Not VBA.IsObject(Variable) Then Exit Property
-    AssignedObject = Not Variable Is Nothing
+    ObjectAssigned = Not Variable Is Nothing
 End Property
 
 '-------------------------------------------------------------------------------
@@ -1771,8 +1770,8 @@ Public Function GetDictionaryCopy( _
 End Function
 
 'является ли число чётным :) Что такое Even и Odd запоминать лень...
-Public Property Get IsChet(ByVal X As Variant) As Boolean
-    If X Mod 2 = 0 Then IsChet = True Else IsChet = False
+Public Property Get IsChet(ByVal x As Variant) As Boolean
+    If x Mod 2 = 0 Then IsChet = True Else IsChet = False
 End Property
 
 'делится ли Number на Divider нацело
@@ -1949,10 +1948,10 @@ Public Sub Show(ByRef Variable As Variant)
     End If
 End Sub
 
-Public Sub Swap(ByRef X As Variant, ByRef Y As Variant)
+Public Sub Swap(ByRef x As Variant, ByRef Y As Variant)
     Dim z As Variant
-    z = X
-    X = Y
+    z = x
+    x = Y
     Y = z
 End Sub
 
@@ -2115,10 +2114,10 @@ Private Sub UnitSpaceBox()
 End Sub
 
 Private Sub UnitSwap()
-    Dim X As Long, Y As Long
-    X = 1
+    Dim x As Long, Y As Long
+    x = 1
     Y = 2
-    Swap X, Y
-    Debug.Assert X = 2
+    Swap x, Y
+    Debug.Assert x = 2
     Debug.Assert Y = 1
 End Sub

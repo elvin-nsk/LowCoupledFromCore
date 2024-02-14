@@ -6,17 +6,15 @@ Attribute VB_Name = "MarksSetter"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 '===============================================================================
 '   Модуль          : MarksSetter
-'   Версия          : 2023.02.16
+'   Версия          : 2024.02.13
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
-'   Назначение      :
+'   Назначение      : Расставляет метки реза
 '   Зависимости     : LibCore
 '===============================================================================
-
-'@ModuleDescription("MarksSetter.")
 
 '@PredeclaredId
 Option Explicit
@@ -24,7 +22,7 @@ Option Explicit
 '===============================================================================
 ' # Declarations
 
-Private Type typeThis
+Private Type This
     Bleeds As Double
     MarksLayerColor As Color
     MarksLayerName As String
@@ -37,16 +35,16 @@ Private Type typeThis
     UndermarkColor As Color
     UndermarkThickness As Double
 End Type
-Private This As typeThis
+Private This As This
 
 '===============================================================================
 ' # Constructors
 
-Public Function Create( _
+Public Function New_( _
                     ByVal Shapes As ShapeRange _
                 ) As MarksSetter
-    Set Create = New MarksSetter
-    Create.Inject Shapes
+    Set New_ = New MarksSetter
+    New_.Inject Shapes
 End Function
 
 Friend Sub Inject( _

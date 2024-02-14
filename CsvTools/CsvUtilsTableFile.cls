@@ -7,7 +7,14 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-'@ModuleDescription("CsvUtils to TableFile adapter.")
+'===============================================================================
+'   Модуль          : CsvUtilsTableFile
+'   Версия          : 2024.02.13
+'   Автор           : elvin-nsk (me@elvin.nsk.ru)
+'   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
+'   Назначение      : Адаптер CsvUtils к TableFile
+'   Зависимости     : Нет
+'===============================================================================
 
 '@PredeclaredId
 Option Explicit
@@ -17,7 +24,7 @@ Implements ITableFile
 '===============================================================================
 ' # Declarations
 
-Private Type typeThis
+Private Type This
     Arr As Variant
     Delimiter As String
     File As String
@@ -25,31 +32,31 @@ Private Type typeThis
     StartingColumn As Long
     ReadOnly As Boolean
 End Type
-Private This As typeThis
+Private This As This
 
 '===============================================================================
 ' # Constructors
 
-Public Function Create( _
+Public Function New_( _
                     ByVal FileToBind As String, _
                     Optional ByVal Delimiter As String = ";", _
                     Optional ByVal StartingRow As Long = 1, _
                     Optional ByVal StartingColumn As Long = 1 _
                 ) As ITableFile
     With New CsvUtilsTableFile
-        Set Create = _
+        Set New_ = _
             .Init(FileToBind, Delimiter, StartingRow, StartingColumn, False)
     End With
 End Function
 
-Public Function CreateReadOnly( _
+Public Function NewReadOnly( _
                     ByVal FileToBind As String, _
                     Optional ByVal Delimiter As String = ";", _
                     Optional ByVal StartingRow As Long = 1, _
                     Optional ByVal StartingColumn As Long = 1 _
                 ) As ITableFile
     With New CsvUtilsTableFile
-        Set CreateReadOnly = _
+        Set NewReadOnly = _
             .Init(FileToBind, Delimiter, StartingRow, StartingColumn, True)
     End With
 End Function

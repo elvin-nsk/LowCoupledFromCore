@@ -17,11 +17,11 @@
 Dim ComposerElements As New Collection
 Dim Shape As Shape
 For Each Shape In ActiveSelectionRange
-    ComposerElements.Add ComposerElement.Create(Shape)
+    ComposerElements.Add ComposerElement.New_(Shape)
 Next Shape
 
 ' инициализируем и запускаем Composer с этой коллекцией:
-With Composer.CreateAndCompose( _
+With Composer.NewAndCompose( _
                   Elements:=ComposerElements, _
                   StartingPoint:=FreePoint.Create(0, 297), _
                   MaxPlacesInWidth:=3, _

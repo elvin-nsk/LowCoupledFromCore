@@ -7,6 +7,16 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+'===============================================================================
+'   Модуль          : PresetsConfig
+'   Версия          : 2024.02.13
+'   Автор           : elvin-nsk (me@elvin.nsk.ru)
+'   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
+'   Назначение      : Хранит настройки в json-формате в виде пресетов
+'   Зависимости     : JsonConverter
+'===============================================================================
+
+'@Interface
 '@PredeclaredId
 Option Explicit
 
@@ -17,45 +27,41 @@ Private Const CURRENT_KEY As String = "Current"
 Private Const DEFAULT_PRESET_NAME As String = "Default"
 Private Const PRESETS_DICTIONARY_KEY As String = "Presets"
 
-Private Type typeThis
+Private Type This
     ConfigDictionary As Scripting.IDictionary
     CurrentPresetName As String
     FallbackPreset As Scripting.IDictionary
     FileSpec As String
     ReadOnly As Boolean
 End Type
-Private This As typeThis
+Private This As This
 
 '===============================================================================
 ' # Constructors
 
-Public Function Create( _
+Friend Function New_( _
                     ByVal FileBaseName As String, _
                     ByVal FallbackPreset As Scripting.IDictionary, _
                     Optional ByVal DefaultPresetName As String _
                         = DEFAULT_PRESET_NAME _
                 ) As PresetsConfig
-    With New PresetsConfig
-        Set Create = _
-            .Init(FileBaseName, FallbackPreset, DefaultPresetName, False)
-    End With
+    Set New_ = New PresetsConfig
+    New_.Inject FileBaseName, FallbackPreset, DefaultPresetName, False
 End Function
 
-Public Function CreateReadOnly( _
+Friend Function NewReadOnly( _
                     ByVal FileBaseName As String _
                 ) As PresetsConfig
-    With New PresetsConfig
-        Set CreateReadOnly = _
-            .Init(FileBaseName, Nothing, vbNullString, True)
-    End With
+    Set NewReadOnly = New PresetsConfig
+    NewReadOnly.Inject FileBaseName, Nothing, vbNullString, True
 End Function
 
-Friend Function Init( _
-                    ByVal FileBaseName As String, _
-                    ByVal FallbackPreset As Scripting.IDictionary, _
-                    ByVal DefaultPresetName As String, _
-                    ByVal ReadOnly As Boolean _
-                ) As PresetsConfig
+Friend Sub Inject( _
+               ByVal FileBaseName As String, _
+               ByVal FallbackPreset As Scripting.IDictionary, _
+               ByVal DefaultPresetName As String, _
+               ByVal ReadOnly As Boolean _
+           )
     With This
         .ReadOnly = ReadOnly
         Set .FallbackPreset = FallbackPreset
@@ -63,8 +69,7 @@ Friend Function Init( _
             GetConfig(FileBaseName, DefaultPresetName)
         .CurrentPresetName = .ConfigDictionary(CURRENT_KEY)
     End With
-    Set Init = Me
-End Function
+End Sub
 
 Private Sub Class_Terminate()
     If Not This.FileSpec = vbNullString Then
@@ -113,8 +118,9 @@ End Property
 
 Public Sub ForceSave()
     If This.ReadOnly Then Exit Sub
+    Dim JsonConverter As New JsonConverter
     WriteFile _
-        JsonConverter.Create.ConvertToJson(This.ConfigDictionary), _
+        JsonConverter.ConvertToJson(This.ConfigDictionary), _
         This.FileSpec
 End Sub
 
@@ -130,8 +136,9 @@ Private Function GetConfig( _
                      ByVal DefaultPresetName As String _
                 ) As Dictionary
     This.FileSpec = GetConfigFile(FileBaseName)
+    Dim JsonConverter As New JsonConverter
     If FileExists(This.FileSpec) Then
-        Set GetConfig = JsonConverter.Create.ParseJson(ReadFile(This.FileSpec))
+        Set GetConfig = JsonConverter.ParseJson(ReadFile(This.FileSpec))
     Else
         Set GetConfig = CreateConfig(DefaultPresetName)
     End If
