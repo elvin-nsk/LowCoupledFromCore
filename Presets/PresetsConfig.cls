@@ -9,11 +9,11 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '===============================================================================
 '   Модуль          : PresetsConfig
-'   Версия          : 2024.02.13
+'   Версия          : 2024.02.16
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
 '   Назначение      : Хранит настройки в json-формате в виде пресетов
-'   Зависимости     : JsonConverter
+'   Зависимости     : LibCore, JsonConverter
 '===============================================================================
 
 '@Interface

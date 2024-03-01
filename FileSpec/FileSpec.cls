@@ -42,9 +42,9 @@ Friend Sub Inject( _
                Optional ByVal File As String _
            )
     With This
-        RefreshFilePath Path
-        RefreshBaseName GetFileName(Path)
-        RefreshFileExt GetFileName(Path)
+        RefreshFilePath File
+        RefreshBaseName GetFileName(File)
+        RefreshFileExt GetFileName(File)
     End With
 End Sub
 

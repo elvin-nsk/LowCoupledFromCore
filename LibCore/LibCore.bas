@@ -1,7 +1,7 @@
 Attribute VB_Name = "LibCore"
 '===============================================================================
 '   Модуль          : LibCore
-'   Версия          : 2024.02.12
+'   Версия          : 2024.02.26
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Использован код : dizzy (из макроса CtC), Alex Vakulenko
 '                     и др.
@@ -15,7 +15,7 @@ Option Explicit
 '===============================================================================
 ' # приватные переменные модуля
 
-Private Type typeLayerProps
+Private Type LayerProperties
     Visible As Boolean
     Printable As Boolean
     Editable As Boolean
@@ -40,7 +40,7 @@ Public Enum ErrorCodes
     ErrorTypeMismatch = 13
 End Enum
 
-Public Const CustomError = vbObjectError Or 32
+Public Const CUSTOM_ERROR = vbObjectError Or 32
 
 '===============================================================================
 ' # функции поиска и получения информации об объектах корела
@@ -50,8 +50,9 @@ Public Property Get AverageDim(ByVal ShapeOrRangeOrPage As Object) As Double
     If Not TypeOf ShapeOrRangeOrPage Is Shape _
    And Not TypeOf ShapeOrRangeOrPage Is ShapeRange _
    And Not TypeOf ShapeOrRangeOrPage Is Page Then
-        Err.Raise 13, Source:="AverageDim", _
-                  Description:="Type mismatch: ShapeOrRangeOrPage должен быть Shape, ShapeRange или Page"
+        Err.Raise _
+            13, Source:="AverageDim", _
+            Description:="Type mismatch: ShapeOrRangeOrPage должен быть Shape, ShapeRange или Page"
         Exit Property
     End If
     AverageDim = (ShapeOrRangeOrPage.SizeWidth + ShapeOrRangeOrPage.SizeHeight) _
@@ -186,7 +187,7 @@ End Property
 'отсюда: https://community.coreldraw.com/talk/coreldraw_graphics_suite_x4/f/coreldraw-graphics-suite-x4/57576/macro-list-fonts-within-a-text-file
 Public Sub FindFontsInRange( _
                 ByVal TextRange As TextRange, _
-                ByVal ioFonts As Collection _
+                ByVal MutFonts As Collection _
             )
     Dim FontName As String
     Dim Before As TextRange, After As TextRange
@@ -199,27 +200,27 @@ Public Sub FindFontsInRange( _
         Before.End = (Before.Start + Before.End) \ 2
         Set After = TextRange.Duplicate
         After.Start = Before.End
-        FindFontsInRange Before, ioFonts
-        FindFontsInRange After, ioFonts
+        FindFontsInRange Before, MutFonts
+        FindFontsInRange After, MutFonts
     Else
-        AddFontToCollection FontName, ioFonts
+        AddFontToCollection FontName, MutFonts
     End If
 End Sub
 '+++
 Private Sub AddFontToCollection( _
                 ByVal FontName As String, _
-                ByVal ioFonts As Collection _
+                ByVal MutFonts As Collection _
             )
     Dim Font As Variant
     Dim Found As Boolean
     Found = False
-    For Each Font In ioFonts
+    For Each Font In MutFonts
         If Font = FontName Then
             Found = True
             Exit For
         End If
     Next Font
-    If Not Found Then ioFonts.Add FontName
+    If Not Found Then MutFonts.Add FontName
 End Sub
 
 Public Property Get DiffWithinTolerance( _
@@ -227,7 +228,7 @@ Public Property Get DiffWithinTolerance( _
                         ByVal Number2 As Variant, _
                         ByVal Tolerance As Variant _
                     ) As Boolean
-    DiffWithinTolerance = VBA.Abs(Number1 - Number2) < Tolerance
+    DiffWithinTolerance = VBA.Abs(Number1 - Number2) <= Tolerance
 End Property
 
 'возвращает все шейпы на всех слоях текущей страницы, по умолчанию - без мастер-слоёв и без гайдов
@@ -529,7 +530,7 @@ Public Property Get IsOverlap( _
     Dim tIS As Shape
     Dim tShape1 As Shape, tShape2 As Shape
     Dim tBound1 As Shape, tBound2 As Shape
-    Dim tProps As typeLayerProps
+    Dim tProps As LayerProperties
     
     If FirstShape.Type = cdrConnectorShape _
     Or SecondShape.Type = cdrConnectorShape Then _
@@ -581,7 +582,7 @@ Public Property Get IsOverlapBox( _
                         ByVal SecondShape As Shape _
                     ) As Boolean
     Dim tShape As Shape
-    Dim tProps As typeLayerProps
+    Dim tProps As LayerProperties
     'запоминаем какой слой был активным
     Dim tLayer As Layer: Set tLayer = ActiveLayer
     'запоминаем состояние первого слоя
@@ -1096,8 +1097,8 @@ End Function
 'инструмент Crop Tool
 Public Function CropTool( _
                     ByVal ShapeOrRangeOrPage As Object, _
-                    ByVal x1#, ByVal y1#, _
-                    ByVal x2#, ByVal y2#, _
+                    ByVal x1 As Double, ByVal y1 As Double, _
+                    ByVal x2 As Double, ByVal y2 As Double, _
                     Optional ByVal Angle = 0 _
                 ) As ShapeRange
     If TypeOf ShapeOrRangeOrPage Is Shape Or _
@@ -1124,7 +1125,7 @@ Public Function DuplicateActivePage( _
                 ) As Page
     Dim tRange As ShapeRange
     Dim tShape As Shape, sDuplicate As Shape
-    Dim tProps As typeLayerProps
+    Dim tProps As LayerProperties
     Dim i&
     For i = 1 To NumberOfPages
         Set tRange = FindShapesActivePageLayers
@@ -1228,6 +1229,13 @@ Public Function FlattenPagesToLayer(ByVal LayerName As String) As Layer
 
 End Function
 
+Public Function GroupAndName( _
+                    ByVal Shapes As ShapeRange, ByVal Name As String _
+                ) As Shape
+    Set GroupAndName = Shapes.Group
+    GroupAndName.Name = Name
+End Function
+
 'правильный интерсект
 Public Function Intersect( _
                     ByVal SourceShape As Shape, _
@@ -1236,8 +1244,8 @@ Public Function Intersect( _
                     Optional ByVal LeaveTarget As Boolean = True _
                 ) As Shape
                                      
-    Dim tPropsSource As typeLayerProps
-    Dim tPropsTarget As typeLayerProps
+    Dim tPropsSource As LayerProperties
+    Dim tPropsTarget As LayerProperties
     
     If Not SourceShape.Layer Is TargetShape.Layer Then _
         LayerPropsPreserveAndReset SourceShape.Layer, tPropsSource
@@ -1281,7 +1289,7 @@ Public Function MoveToLayer( _
     ThrowIfNotShapeOrRange MaybeShapeOrRange
     
     Dim tSrcLayer() As Layer
-    Dim tProps() As typeLayerProps
+    Dim tProps() As LayerProperties
     Dim tLayersCol As Collection
     Dim i&
     
@@ -1455,12 +1463,12 @@ End Property
 'возвращает имя файла без расширения
 Public Property Get GetFileNameNoExt(ByVal FileName As String) As String
     If VBA.Right(FileName, 1) <> "\" And VBA.Len(FileName) > 0 Then
-        GetFileNameNoExt = Left(FileName, _
+        GetFileNameNoExt = VBA.Left(FileName, _
             Switch _
-                (InStr(FileName, ".") = 0, _
+                (VBA.InStr(FileName, ".") = 0, _
                     Len(FileName), _
-                InStr(FileName, ".") > 0, _
-                    InStrRev(FileName, ".") - 1))
+                VBA.InStr(FileName, ".") > 0, _
+                    VBA.InStrRev(FileName, ".") - 1))
     End If
 End Property
 
@@ -1494,10 +1502,27 @@ Public Property Get GetFilePath(ByVal File As String) As String
     GetFilePath = VBA.Left(File, VBA.InStrRev(File, "\"))
 End Property
 
+Public Property Get GetFilesFromFolder(ByVal Path As String) As VBA.Collection
+    Set GetFilesFromFolder = SequenceToCollection(FSO.GetFolder(Path).Files)
+End Property
+
+Public Property Get GetRandomFilesFromFolder( _
+                        ByVal Path As String, _
+                        Optional ByVal NumberOfFiles As Long = 1 _
+                    ) As VBA.Collection
+    Set GetRandomFilesFromFolder = New Collection
+    Dim Files As Collection: Set Files = GetFilesFromFolder(Path)
+    If Files.Count = 0 Then Exit Property
+    Do While GetRandomFilesFromFolder.Count < NumberOfFiles
+        GetRandomFilesFromFolder.Add Files(RndLong(1, Files.Count))
+    Loop
+End Property
+
 'создаёт папку, если не было
 'возвращает Path обратно (для inline-использования)
 Public Function MakeDir(ByVal Path As String) As String
-    If Not FSO.FolderExists(Path) Then MkDir Path
+    Dim FS As New FileSystemObject
+    If Not FS.FolderExists(Path) Then FS.CreateFolder Path
     MakeDir = Path
 End Function
 
@@ -1602,6 +1627,10 @@ Public Sub AppendCollection( _
     Next Item
 End Sub
 
+Public Function AskYesNo(ByVal Text As String) As Boolean
+    AskYesNo = (VBA.MsgBox(Text, vbYesNo) = 6)
+End Function
+
 Public Sub Assign(ByRef Destination As Variant, ByVal x As Variant)
     If VBA.IsObject(x) Then
         Set Destination = x
@@ -1610,34 +1639,15 @@ Public Sub Assign(ByRef Destination As Variant, ByVal x As Variant)
     End If
 End Sub
 
-'возвращает True, если Value - это объект и при этом не Nothing
-Public Property Get ObjectAssigned(ByRef Variable As Variant) As Boolean
-    If Not VBA.IsObject(Variable) Then Exit Property
-    ObjectAssigned = Not Variable Is Nothing
-End Property
-
-'-------------------------------------------------------------------------------
-' Функции           : BoostStart, BoostFinish
-' Версия            : 2022.05.31
-' Авторы            : dizzy, elvin-nsk
-' Назначение        : доработанные оптимизаторы от CtC
-' Зависимости       : самодостаточные
-'
-' Параметры:
-' ~~~~~~~~~~
-'
-'
-' Использование:
-' ~~~~~~~~~~~~~~
-'
-'-------------------------------------------------------------------------------
 Public Sub BoostStart( _
-               Optional ByVal UndoGroupName As String = "", _
-               Optional ByVal Optimize As Boolean = True _
+               Optional ByVal UndoGroupName As String = "" _
            )
-    If Not UndoGroupName = "" And Not ActiveDocument Is Nothing Then _
+    If Not UndoGroupName = vbNullString _
+   And Not ActiveDocument Is Nothing Then _
         ActiveDocument.BeginCommandGroup UndoGroupName
-    If Optimize And Not Optimization Then Optimization = True
+    #If Not DebugMode = 1 Then
+    If Not Optimization Then Optimization = True
+    #End If
     If EventsEnabled Then EventsEnabled = False
     If Not ActiveDocument Is Nothing Then
         With ActiveDocument
@@ -1665,23 +1675,27 @@ Public Sub BoostFinish(Optional ByVal EndUndoGroup As Boolean = True)
 End Sub
 
 Public Property Get Contains( _
-                        ByRef Sequence As Variant, _
-                        ByRef Items As Variant _
+                        ByRef ContainerSeq As Variant, _
+                        ByRef Item As Variant _
                     ) As Boolean
     Dim Element As Variant
+    For Each Element In ContainerSeq
+        If Same(Item, Element) Then
+            Contains = True
+            Exit Property
+        End If
+    Next Element
+End Property
+
+Public Property Get ContainsAll( _
+                        ByRef ContainerSeq As Variant, _
+                        ByRef ItemsSeq As Variant _
+                    ) As Boolean
     Dim Item As Variant
-    Dim ItemExists As Boolean
-    For Each Item In Items
-        For Each Element In Sequence
-            If IsSame(Item, Element) Then
-                ItemExists = True
-                Exit For
-            End If
-        Next Element
-        If Not ItemExists Then Exit Property
-        ItemExists = False
+    For Each Item In ItemsSeq
+        If Not Contains(ContainerSeq, Item) Then Exit Property
     Next Item
-    Contains = True
+    ContainsAll = True
 End Property
 
 Public Property Get Count( _
@@ -1718,6 +1732,26 @@ Public Function CreateGUID( _
     If Lowercase Then CreateGUID = VBA.LCase$(CreateGUID)
     If Parens Then CreateGUID = "{" & CreateGUID & "}"
 End Function
+
+Public Sub DebugOut( _
+               ByVal Context As Variant, _
+               ParamArray Output() As Variant _
+            )
+    #If DebugMode = 1 Then
+    If Not VBA.VarType(Context) = vbString Then
+        Context = VBA.TypeName(Context)
+    End If
+    Debug.Print "<" & Context & "> " & VBA.Join(Output, " ")
+    #End If
+End Sub
+
+Public Property Get Deduplicate(ByVal Sequence As Variant) As VBA.Collection
+    Set Deduplicate = New Collection
+    Dim Item As Variant
+    For Each Item In Sequence
+        If Not Contains(Deduplicate, Item) Then Deduplicate.Add Item
+    Next Item
+End Property
 
 Public Property Get FindMaxItemNum(ByVal Collection As Collection) As Long
     FindMaxItemNum = 1
@@ -1786,17 +1820,6 @@ Public Property Get IsLowerCase(ByVal Str As String) As Boolean
     If VBA.LCase(Str) = Str Then IsLowerCase = True
 End Property
 
-Public Property Get IsSame( _
-                        ByRef Value1 As Variant, _
-                        ByRef Value2 As Variant _
-                    ) As Boolean
-    If VBA.IsObject(Value1) And VBA.IsObject(Value2) Then
-        IsSame = Value1 Is Value2
-    ElseIf Not VBA.IsObject(Value1) And Not VBA.IsObject(Value2) Then
-        IsSame = (Value1 = Value2)
-    End If
-End Property
-
 Public Property Get IsUpperCase(ByVal Str As String) As Boolean
     If VBA.UCase(Str) = Str Then IsUpperCase = True
 End Property
@@ -1814,6 +1837,44 @@ Public Property Get IsVoid(ByRef Some As Variant) As Boolean
             Exit Property
         End If
     End If
+End Property
+
+Public Property Get MatchAll( _
+                        ByVal Reference As Variant, _
+                        ByVal SamplesSeq As Variant _
+                    ) As Boolean
+    Dim Sample As Variant
+    For Each Sample In SamplesSeq
+        If Not Same(Sample, Reference) Then Exit Property
+    Next Sample
+    MatchAll = True
+End Property
+
+Public Property Get MatchAllOf( _
+                        ByVal Reference As Variant, _
+                        ParamArray Samples() As Variant _
+                    ) As Boolean
+    MatchAllOf = MatchAll(Reference, Samples)
+End Property
+
+Public Property Get MatchAny( _
+                        ByVal Reference As Variant, _
+                        ByVal SamplesSeq As Variant _
+                    ) As Boolean
+    Dim Sample As Variant
+    For Each Sample In SamplesSeq
+        If Same(Sample, Reference) Then
+            MatchAny = True
+            Exit Property
+        End If
+    Next Sample
+End Property
+
+Public Property Get MatchAnyOf( _
+                        ByVal Reference As Variant, _
+                        ParamArray Samples() As Variant _
+                    ) As Boolean
+    MatchAnyOf = MatchAny(Reference, Samples)
 End Property
 
 Public Property Get Max(ByRef Sequence As Variant) As Variant
@@ -1836,7 +1897,7 @@ Public Function MeasureStart()
     StartTime = Timer
 End Function
 Public Function MeasureFinish(Optional ByVal Message As String = "")
-    Debug.Print Message & VBA.CStr(Round(Timer - StartTime, 3)) & " секунд"
+    Debug.Print Message & CStr(Round(Timer - StartTime, 3)) & " секунд"
 End Function
 
 Public Property Get Min(ByRef Sequence As Variant) As Variant
@@ -1855,6 +1916,12 @@ Public Property Get MinOfTwo( _
                         ByVal Value2 As Variant _
                     ) As Variant
     If Value1 < Value2 Then MinOfTwo = Value1 Else MinOfTwo = Value2
+End Property
+
+'возвращает True, если Value - это объект и при этом не Nothing
+Public Property Get ObjectAssigned(ByRef Variable As Variant) As Boolean
+    If Not VBA.IsObject(Variable) Then Exit Property
+    ObjectAssigned = Not Variable Is Nothing
 End Property
 
 Public Property Get Pack(ParamArray Items() As Variant) As Variant()
@@ -1898,7 +1965,7 @@ Public Sub RemoveElementFromCollection( _
     If Collection.Count = 0 Then Exit Sub
     Dim i As Long
     For i = 1 To Collection.Count
-        If IsSame(Element, Collection(i)) Then
+        If Same(Element, Collection(i)) Then
             Collection.Remove i
             Exit Sub
         End If
@@ -1909,55 +1976,106 @@ Private Sub Resize(ByRef Arr As Variant, ByVal Length As Long)
     ReDim Preserve Arr(LBound(Arr) To LBound(Arr) + Length - 1)
 End Sub
 
+'случайное число от LowerBound до UpperBound
+Public Function RndDouble(LowerBound As Double, UpperBound As Double) As Double
+    RndDouble = (UpperBound - LowerBound + 1) * VBA.Rnd + LowerBound
+End Function
+
 'случайное целое от LowerBound до UpperBound
-Public Property Get RndInt( _
-                        ByVal LowerBound As Long, _
-                        ByVal UpperBound As Long _
-                    ) As Long
-    RndInt = VBA.Int((UpperBound - LowerBound + 1) * VBA.Rnd + LowerBound)
-End Property
+Public Function RndLong(LowerBound As Long, UpperBound As Long) As Long
+    RndLong = VBA.Int((UpperBound - LowerBound + 1) * VBA.Rnd + LowerBound)
+End Function
 
 'выводит информацию о переменной / её значение в окно immediate
-Public Sub Show(ByRef Variable As Variant)
-    If VBA.IsObject(Variable) Then
-        If Variable Is Nothing Then
-            ShowString "[Nothing]"
-        Else
-            'TODO сделать более детально
-            ShowString "[Object]: " & VBA.TypeName(Variable)
-        End If
-    Else
-        If VBA.IsMissing(Variable) Then
-            ShowString "[Missing]"
-        Else
-            Select Case VBA.VarType(Variable)
-                Case vbEmpty
-                    ShowString "[Empty]"
-                Case vbNull
-                    ShowString "[Null]"
-                Case vbError
-                    ShowString "[Error]"
-                Case vbArray
-                Case vbString
-                    ShowString Variable
-                Case Else
-                    ShowString "[Value]: " & Variable
-            End Select
-            
-        End If
-    End If
+Public Sub Show(ByVal Some As Variant)
+    Debug.Print ToShowable(Some)
 End Sub
 
-Public Sub Swap(ByRef x As Variant, ByRef Y As Variant)
+Public Property Get Same( _
+                        ByRef x As Variant, _
+                        ByRef y As Variant _
+                    ) As Boolean
+    If VBA.IsObject(x) And VBA.IsObject(y) Then
+        Same = x Is y
+    ElseIf Not VBA.IsObject(x) And Not VBA.IsObject(y) Then
+        Same = (x = y)
+    End If
+End Property
+
+Public Property Get SequenceToCollection( _
+                        ByVal Sequence As Variant _
+                    ) As VBA.Collection
+    Set SequenceToCollection = New Collection
+    Dim Item As Variant
+    For Each Item In Sequence
+        SequenceToCollection.Add Item
+    Next Item
+End Property
+
+Public Property Get SequenceToShowable(ByVal Sequence As Variant) As String
+    Dim Result As String
+    Dim Item As Variant
+    For Each Item In Sequence
+        Result = Result & ToShowable(Item) & ", "
+    Next Item
+    If VBA.Len(Result) > 2 Then Result = VBA.Left(Result, VBA.Len(Result) - 2)
+    SequenceToShowable = "[" & Result & "]"
+End Property
+
+Public Sub Swap(ByRef x As Variant, ByRef y As Variant)
     Dim z As Variant
     z = x
-    x = Y
-    Y = z
+    x = y
+    y = z
 End Sub
 
 Public Sub Throw(Optional ByVal Message As String = "Неизвестная ошибка")
-    VBA.Err.Raise CustomError, , Message
+    VBA.Err.Raise CUSTOM_ERROR, , Message
 End Sub
+
+Public Property Get ToShowable(ByVal Some As Variant) As String
+    If VBA.IsObject(Some) Then
+        If Some Is Nothing Then
+            ToShowable = "[Nothing]"
+        ElseIf TypeOf Some Is VBA.Collection Then
+            ToShowable = SequenceToShowable(Some)
+        ElseIf TypeOf Some Is Scripting.Dictionary Then
+            ToShowable = SequenceToShowable(Some.Items)
+        ElseIf TypeOf Some Is Scripting.File Then
+            ToShowable = Some.Name
+        ElseIf TypeOf Some Is Scripting.Files Then
+            ToShowable = SequenceToShowable(Some)
+        Else
+            ToShowable = "[Object:" & VBA.TypeName(Some) & "]"
+        End If
+    ElseIf VBA.IsMissing(Some) Then
+        ToShowable = "[Missing]"
+    ElseIf VBA.IsArray(Some) Then
+        ToShowable = SequenceToShowable(Some)
+    Else
+        Select Case VBA.VarType(Some)
+            Case vbEmpty: ToShowable = "[Empty]"
+            Case vbNull: ToShowable = "[Null]"
+            Case vbError: ToShowable = "[Error]"
+            Case Else: ToShowable = Some
+        End Select
+    End If
+End Property
+
+Public Property Get ToStr( _
+                        ByVal Some As Variant, _
+                        Optional ByVal DecimalSeparator As String = "," _
+                    ) As String
+    If VBA.VarType(Some) = vbString Then
+        ToStr = Some
+    Else
+        If DecimalSeparator = "," Then
+            ToStr = CStr(Some)
+        Else
+            ToStr = VBA.Replace(CStr(Some), ",", DecimalSeparator)
+        End If
+    End If
+End Property
 
 '===============================================================================
 ' # приватные функции модуля
@@ -1981,7 +2099,7 @@ Private Function IsIntersectReady(ByVal Shape As Shape) As Boolean
     End With
 End Function
 
-Private Sub LayerPropsPreserve(ByVal L As Layer, ByRef Props As typeLayerProps)
+Private Sub LayerPropsPreserve(ByVal L As Layer, ByRef Props As LayerProperties)
     With Props
         .Visible = L.Visible
         .Printable = L.Printable
@@ -1995,7 +2113,7 @@ Private Sub LayerPropsReset(ByVal L As Layer)
         If Not .Editable Then .Editable = True
     End With
 End Sub
-Private Sub LayerPropsRestore(ByVal L As Layer, ByRef Props As typeLayerProps)
+Private Sub LayerPropsRestore(ByVal L As Layer, ByRef Props As LayerProperties)
     With Props
         If L.Visible <> .Visible Then L.Visible = .Visible
         If L.Printable <> .Printable Then L.Printable = .Printable
@@ -2004,14 +2122,10 @@ Private Sub LayerPropsRestore(ByVal L As Layer, ByRef Props As typeLayerProps)
 End Sub
 Private Sub LayerPropsPreserveAndReset( _
                 ByVal L As Layer, _
-                ByRef Props As typeLayerProps _
+                ByRef Props As LayerProperties _
             )
     LayerPropsPreserve L, Props
     LayerPropsReset L
-End Sub
-
-Private Sub ShowString(ByVal Str As String)
-    Debug.Print Str
 End Sub
 
 Private Sub ThrowIfNotShapeOrRange( _
@@ -2031,93 +2145,7 @@ Private Sub ThrowIfNotCollectionOrArray(ByRef CollectionOrArray As Variant)
     If VBA.IsObject(CollectionOrArray) Then _
         If TypeOf CollectionOrArray Is Collection Then Exit Sub
     If VBA.IsArray(CollectionOrArray) Then Exit Sub
-    VBA.Err.Raise 13, Source:="lib_elvin", _
-                  Description:="Type mismatch: CollectionOrArray должен быть Collection или Array"
-End Sub
-
-'===============================================================================
-' # юнит-тесты и ручные тесты модуля
-
-Private Sub TestGetRotatedRect()
-    Dim Rect As Rect
-    Set Rect = ActiveLayer.CreateRectangle(0, 0, 3, 6).BoundingBox
-    ActiveLayer.CreateRectangleRect GetRotatedRect(Rect)
-End Sub
-
-Private Sub TestShow()
-    Show Empty
-    Show Null
-    Show 3
-    Show "3"
-    Show New Collection
-End Sub
-
-Private Sub UnitContains()
-    Debug.Assert Contains(Array(1, 2, 3), Array(3, 1, 2)) = True
-    Debug.Assert Contains(Array(1, 2, 3), Array(3, 1, 4)) = False
-    Debug.Print "Contains is OK"
-End Sub
-
-Private Sub UnitHasPosition()
-    Debug.Assert HasPosition(CreateRect) = True
-    Debug.Assert HasPosition(New Collection) = False
-    Debug.Assert HasPosition(123) = False
-    Debug.Print "HasPosition is OK"
-End Sub
-
-Private Sub UnitHasSize()
-    Debug.Assert HasSize(CreateRect) = True
-    Debug.Assert HasPosition(New Collection) = False
-    Debug.Assert HasPosition(123) = False
-    Debug.Print "HasSize is OK"
-End Sub
-
-Private Sub UnitIsJust()
-    Debug.Assert IsJust(0) = True
-    Debug.Assert IsJust(1) = True
-    Debug.Assert IsJust(New Collection) = True
-    Debug.Assert IsJust(Empty) = False
-    Debug.Assert IsJust(Null) = False
-    Debug.Assert IsJust(Nothing) = False
-    Debug.Assert IsJust(VBA.CVErr(ErrorCodes.ErrorInvalidArgument)) = False
-    Debug.Print "IsJust is OK"
-End Sub
-
-Private Sub UnitNumberToFitArea()
-    Debug.Assert _
-        NumberToFitArea( _
-            CreateRect(0, 0, 10, 10), _
-            CreateRect(0, 0, 100, 100) _
-        ) = 100
-    Debug.Assert _
-        NumberToFitArea( _
-            CreateRect(0, 0, 10, 20), _
-            CreateRect(0, 0, 10, 20) _
-        ) = 1
-    Debug.Assert _
-        NumberToFitArea( _
-            CreateRect(0, 0, 10, 20), _
-            CreateRect(0, 0, 5, 5) _
-        ) = 0
-    Debug.Assert _
-        NumberToFitArea( _
-            CreateRect(0, 0, 10, 20), _
-            CreateRect(0, 0, 21, 21) _
-        ) = 2
-End Sub
-
-Private Sub UnitSpaceBox()
-    With SpaceBox(CreateRect(0, 0, 100, 100), 20)
-        Debug.Assert .Width = 140
-        Debug.Assert .Height = 140
-    End With
-End Sub
-
-Private Sub UnitSwap()
-    Dim x As Long, Y As Long
-    x = 1
-    Y = 2
-    Swap x, Y
-    Debug.Assert x = 2
-    Debug.Assert Y = 1
+    VBA.Err.Raise _
+        13, Source:="LibCore", _
+        Description:="Type mismatch: CollectionOrArray должен быть Collection или Array"
 End Sub

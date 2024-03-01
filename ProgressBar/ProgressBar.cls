@@ -5,9 +5,9 @@ END
 Attribute VB_Name = "ProgressBar"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-'@Folder UI
+'@PredeclaredId
 Option Explicit
 
 '===============================================================================
@@ -35,6 +35,15 @@ Attribute View.VB_VarHelpID = -1
 '===============================================================================
 ' # Constructors
 
+Public Function New_( _
+                    Optional ByVal Unit As ProgressBarUnit = ProgressBarNumeric, _
+                    Optional ByVal Max As Long = 100, _
+                    Optional ByVal Step As Long = 1 _
+                ) As ProgressBar
+    Set New_ = New ProgressBar
+    New_.Inject Unit, Max, Step
+End Function
+
 Private Sub Class_Initialize()
     With This
         .Max = 100
@@ -45,14 +54,16 @@ Private Sub Class_Initialize()
 End Sub
 
 Friend Sub Inject( _
-               Optional ByVal Unit As ProgressBarUnit = ProgressBarNumeric, _
-               Optional ByVal Max As Long = 100, _
-               Optional ByVal Step As Long = 1 _
+               ByVal Unit As ProgressBarUnit, _
+               ByVal Max As Long, _
+               ByVal Step As Long _
            )
     With This
         .Unit = Unit
         If IsValid(Max) Then .Max = Max Else Throw
         .Step = Step
+        .Iteration = 0
+        Set View = New ProgressBarView
     End With
 End Sub
 

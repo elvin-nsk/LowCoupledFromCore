@@ -154,7 +154,7 @@ End Type
 #End If
 ' === End VBA-UTC
 
-Private Type typeThis
+Private Type This
     ' VBA only stores 15 significant digits,
     ' so any numbers larger than that are truncated
     ' This can lead to issues when BIGINT's are used
@@ -176,22 +176,19 @@ Private Type typeThis
     Whitespace As Variant
     Encode As Boolean
 End Type
-Private This As typeThis
+Private This As This
 
 '===============================================================================
 
-Public Function Create() As JsonConverter
-    With New JsonConverter
-        Set Create = .Init()
-    End With
+Public Function New_() As JsonConverter
+    Set New_ = New JsonConverter
 End Function
 
-Friend Function Init() As JsonConverter
+Private Sub Class_Initialize()
     With This
         .Encode = True
     End With
-    Set Init = Me
-End Function
+End Sub
 
 '===============================================================================
 
@@ -682,9 +679,9 @@ Private Function json_ParseNumber(json_String As String, ByRef json_Index As Lon
             ' This can lead to issues when BIGINT's are used (e.g. for Ids or Credit Cards), as they will be invalid above 15 digits
             ' See: http://support.microsoft.com/kb/269370
             '
-            ' Fix: Parse -> String, Convert -> String longer than 15/16 characters containing only numbers and decimal points -> Number
+            ' VBA.Fix: Parse -> String, Convert -> String longer than 15/16 characters containing only numbers and decimal points -> Number
             ' (decimal doesn't factor into significant digit count, so if present check for 15 digits + decimal = 16)
-            json_IsLargeNumber = IIf(InStr(json_Value, "."), Len(json_Value) >= 17, Len(json_Value) >= 16)
+            json_IsLargeNumber = VBA.IIf(InStr(json_Value, "."), Len(json_Value) >= 17, Len(json_Value) >= 16)
             If Not This.UseDoubleForLargeNumbers And json_IsLargeNumber Then
                 json_ParseNumber = json_Value
             Else
@@ -906,7 +903,7 @@ Private Sub json_BufferAppend(ByRef json_Buffer As String, _
         ' Appending would overflow buffer, add chunk
         ' (double buffer length or append length, whichever is bigger)
         Dim json_AddedLength As Long
-        json_AddedLength = IIf(json_AppendLength > json_BufferLength, json_AppendLength, json_BufferLength)
+        json_AddedLength = VBA.IIf(json_AppendLength > json_BufferLength, json_AppendLength, json_BufferLength)
 
         json_Buffer = json_Buffer & VBA.Space$(json_AddedLength)
         json_BufferLength = json_BufferLength + json_AddedLength

@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '===============================================================================
 '   Модуль          : TextBoxHandler
-'   Версия          : 2023.10.09
+'   Версия          : 2024.02.21
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
 '   Назначение      : сохранение значений TextBox на форме в заданном диапазоне
@@ -20,8 +20,9 @@ Attribute VB_Exposed = True
 Option Explicit
 
 '===============================================================================
+' # Declarations
 
-Private Const CustomError = vbObjectError Or 32
+Private Const CUSTOM_ERROR = vbObjectError Or 32
 
 Public Enum enumTextBoxType
     TextBoxTypeLong = 3
@@ -29,17 +30,18 @@ Public Enum enumTextBoxType
     TextBoxTypeString = 8
 End Enum
 
-Private Type typeThis
+Private Type This
     TextBoxType As enumTextBoxType
     Min As Variant
     Max As Variant
     AllowMinus As Boolean
 End Type
-Private This As typeThis
-Private WithEvents Encapsulated As MSForms.TextBox
-Attribute Encapsulated.VB_VarHelpID = -1
+Private This As This
+Private WithEvents Bound As MSForms.TextBox
+Attribute Bound.VB_VarHelpID = -1
 
 '===============================================================================
+' # Constructors
 
 Public Function New_( _
                     ByVal TextBox As MSForms.TextBox, _
@@ -47,17 +49,16 @@ Public Function New_( _
                     Optional ByVal Min As Variant = -2147483647, _
                     Optional ByVal Max As Variant = 2147483647 _
                 ) As TextBoxHandler
-    With New TextBoxHandler
-        Set New_ = .Init(TextBox, TextBoxType, Min, Max)
-    End With
+    Set New_ = New TextBoxHandler
+    New_.Inject TextBox, TextBoxType, Min, Max
 End Function
 
-Friend Function Init( _
-                    ByVal TextBox As MSForms.TextBox, _
-                    ByVal TextBoxType As enumTextBoxType, _
-                    ByVal Min As Variant, _
-                    ByVal Max As Variant _
-                ) As TextBoxHandler
+Friend Sub Inject( _
+               ByVal TextBox As MSForms.TextBox, _
+               ByVal TextBoxType As enumTextBoxType, _
+               ByVal Min As Variant, _
+               ByVal Max As Variant _
+           )
     With This
         .TextBoxType = TextBoxType
         .Min = Min
@@ -65,11 +66,11 @@ Friend Function Init( _
         If .Min > .Max Then ThrowMinGreaterThanMax
         .AllowMinus = .Min < 0
     End With
-    Set Encapsulated = TextBox
-    Set Init = Me
-End Function
+    Set Bound = TextBox
+End Sub
 
 '===============================================================================
+' # Public
 
 '@DefaultMember
 Public Property Get Value() As Variant
@@ -80,11 +81,11 @@ Attribute Value.VB_UserMemId = 0
         Case TextBoxTypeDouble
             Value = GetDouble
         Case TextBoxTypeString
-            Value = VBA.CStr(Encapsulated.Value)
+            Value = VBA.CStr(Bound.Value)
     End Select
 End Property
 Public Property Let Value(ByVal RHS As Variant)
-    Encapsulated.Value = VBA.CStr(RHS)
+    Bound.Value = VBA.CStr(RHS)
 End Property
 
 Public Property Get Self() As TextBoxHandler
@@ -92,12 +93,13 @@ Public Property Get Self() As TextBoxHandler
 End Property
 
 '===============================================================================
+' # Handlers
 
-Private Sub Encapsulated_Change()
+Private Sub Bound_Change()
     '
 End Sub
 
-Private Sub Encapsulated_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
+Private Sub Bound_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
     Select Case This.TextBoxType
         Case TextBoxTypeLong
             GuardInt KeyAscii
@@ -107,7 +109,7 @@ Private Sub Encapsulated_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
     End Select
 End Sub
 
-Private Sub Encapsulated_KeyUp( _
+Private Sub Bound_KeyUp( _
                 ByVal KeyCode As MSForms.ReturnInteger, _
                 ByVal Shift As Integer _
             )
@@ -119,6 +121,9 @@ Private Sub Encapsulated_KeyUp( _
         Case TextBoxTypeString
     End Select
 End Sub
+
+'===============================================================================
+' # Helpers
 
 Private Sub GuardInt(ByVal KeyAscii As MSForms.ReturnInteger)
     GuardNumeric KeyAscii, False
@@ -138,14 +143,14 @@ Private Sub GuardNumeric( _
             If FloatCharExists Then
                 KeyAscii.Value = 0
             ElseIf AllowFloat And _
-                         Encapsulated.SelStart > 0 Then
+                         Bound.SelStart > 0 Then
                 KeyAscii.Value = VBA.Asc(",")
             Else
                 KeyAscii.Value = 0
             End If
         Case VBA.Asc("-")
             If This.AllowMinus Then
-                If Encapsulated.SelStart > 0 Then KeyAscii.Value = 0
+                If Bound.SelStart > 0 Then KeyAscii.Value = 0
             Else
                 KeyAscii.Value = 0
             End If
@@ -158,7 +163,7 @@ Private Sub GuardRangeDbl( _
                 ByVal Min As Double, _
                 Optional ByVal Max As Double = 1.79769313486231E+308 _
             )
-    With Encapsulated
+    With Bound
         If .Value = "" Or .Value = "-" Then Exit Sub
         If VBA.CDbl(.Value) > Max Then .Value = VBA.CStr(Max)
         If VBA.CDbl(.Value) < Min Then .Value = VBA.CStr(Min)
@@ -169,7 +174,7 @@ Private Sub GuardRangeLng( _
                 ByVal Min As Long, _
                 Optional ByVal Max As Long = 2147483647 _
             )
-    With Encapsulated
+    With Bound
         If .Value = "" Or .Value = "-" Then Exit Sub
         If VBA.CLng(.Value) > Max Then .Value = VBA.CStr(Max)
         If VBA.CLng(.Value) < Min Then .Value = VBA.CStr(Min)
@@ -177,23 +182,24 @@ Private Sub GuardRangeLng( _
 End Sub
 
 Private Function FloatCharExists() As Boolean
-    FloatCharExists = Not (VBA.InStr(1, Encapsulated.Value, ",", vbBinaryCompare) = 0)
+    FloatCharExists = _
+        Not (VBA.InStr(1, Bound.Value, ",", vbBinaryCompare) = 0)
 End Function
 
 Private Function GetDouble() As Double
-    With Encapsulated
+    With Bound
         If .Value = "" Or .Value = "-" Then Exit Function
         GetDouble = .Value
     End With
 End Function
 
 Private Function GetLong() As Long
-    With Encapsulated
+    With Bound
         If .Value = "" Or .Value = "-" Then Exit Function
         GetLong = .Value
     End With
 End Function
 
 Private Sub ThrowMinGreaterThanMax()
-    VBA.Err.Raise CustomError, "RecordList", "MinGreaterThanMax"
+    VBA.Err.Raise CUSTOM_ERROR, "RecordList", "MinGreaterThanMax"
 End Sub

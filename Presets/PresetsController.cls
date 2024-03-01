@@ -13,7 +13,7 @@ Option Explicit
 '===============================================================================
 ' # Declarations
 
-Private Type typeThis
+Private Type This
     PresetsForm As MSForms.UserForm
     BoundDictionary As Scripting.IDictionary
     CurrentKey As String
@@ -23,7 +23,7 @@ Private Type typeThis
     WarningPresetNameIsEmpty As String
     WarningPresetRemove As String
 End Type
-Private This As typeThis
+Private This As This
 
 Private WithEvents PresetsList As MSForms.ListBox
 Attribute PresetsList.VB_VarHelpID = -1
@@ -42,21 +42,20 @@ Event OnSelectionChange(ByRef outNewKey As String)
 '===============================================================================
 ' # Constructors
 
-Public Function Create( _
+Public Function New_( _
                     ByVal PresetsForm As MSForms.UserForm, _
                     ByVal BoundDictionary As Scripting.IDictionary, _
                     Optional ByVal CurrentKey As String _
                 ) As PresetsController
-    With New PresetsController
-        Set Create = .Init(PresetsForm, BoundDictionary, CurrentKey)
-    End With
+    Set New_ = New PresetsController
+    New_.Inject PresetsForm, BoundDictionary, CurrentKey
 End Function
 
-Friend Function Init( _
+Friend Sub Inject( _
                     ByVal PresetsForm As MSForms.UserForm, _
                     ByVal BoundDictionary As Scripting.IDictionary, _
                     ByVal CurrentKey As String _
-                ) As PresetsController
+                )
     With This
         Set .PresetsForm = PresetsForm
         Set .BoundDictionary = BoundDictionary
@@ -75,9 +74,7 @@ Friend Function Init( _
             SelectIndex GetListItemIndex(CurrentKey)
         End If
     End With
-    
-    Set Init = Me
-End Function
+End Sub
 
 '===============================================================================
 ' # Public
