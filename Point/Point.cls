@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '===============================================================================
 '   Модуль          : Point
-'   Версия          : 2024.02.13
+'   Версия          : 2024.05.25
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
 '   Назначение      : Хранит координаты точки
@@ -46,7 +46,7 @@ End Function
 Public Function GetDistanceFrom(ByVal Point As Point) As Double
 End Function
 
-Public Sub Move(ByVal DeltaX As Double, ByVal DeltaY As Double)
+Public Sub Move(Optional ByVal DeltaX As Double, Optional ByVal DeltaY As Double)
     With This
         .x = .x + DeltaX
         .y = .y + DeltaY
@@ -54,16 +54,15 @@ Public Sub Move(ByVal DeltaX As Double, ByVal DeltaY As Double)
 End Sub
 
 Public Sub RotateAroundPoint( _
-               ByVal RotationCenter As Point, _
+               ByVal PivotPoint As Point, _
                ByVal Angle As Double _
            )
-    With RotationCenter
-        This.x = _
-            (This.x - .x) * VBA.Cos(DegToRad(Angle)) _
-          - (This.y - .y) * VBA.Sin(DegToRad(Angle)) + .x
-        This.y = _
-            (This.x - .x) * VBA.Sin(DegToRad(Angle)) _
-          + (This.y - .y) * VBA.Cos(DegToRad(Angle)) + .y
+    Angle = DegToRad(Angle)
+    Dim x As Double: x = This.x
+    Dim y As Double: y = This.y
+    With PivotPoint
+        This.x = (x - .x) * VBA.Cos(Angle) - (y - .y) * VBA.Sin(Angle) + .x
+        This.y = (x - .x) * VBA.Sin(Angle) + (y - .y) * VBA.Cos(Angle) + .y
     End With
 End Sub
 
