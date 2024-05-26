@@ -1,7 +1,7 @@
 Attribute VB_Name = "LibCore"
 '===============================================================================
 '   Модуль          : LibCore
-'   Версия          : 2024.02.26
+'   Версия          : 2024.05.24
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Использован код : dizzy (из макроса CtC), Alex Vakulenko
 '                     и др.
@@ -497,7 +497,7 @@ End Property
 
 'True, если Value - значение или присвоенный объект (не пустота, не ошибка...)
 Public Property Get IsJust(ByRef Value As Variant) As Boolean
-    IsJust = Not (VBA.IsError(Value) Or IsVoid(Value))
+    IsJust = Not (VBA.IsError(Value) Or IsNone(Value))
 End Property
 
 'является ли шейп/рэйндж/страница альбомным
@@ -1185,13 +1185,13 @@ Public Function FlattenPagesToLayer(ByVal LayerName As String) As Layer
 
     Dim DL As Layer: Set DL = ActiveDocument.MasterPage.DesktopLayer
     Dim DLstate As Boolean: DLstate = DL.Editable
-    Dim P As Page
+    Dim p As Page
     Dim L As Layer
     
     DL.Editable = False
     
-    For Each P In ActiveDocument.Pages
-        For Each L In P.Layers
+    For Each p In ActiveDocument.Pages
+        For Each L In p.Layers
             If L.IsSpecialLayer Then
                 L.Shapes.All.Delete
             Else
@@ -1204,7 +1204,7 @@ Public Function FlattenPagesToLayer(ByVal LayerName As String) As Layer
                 L.Delete
             End If
         Next
-        If P.Index <> 1 Then P.Delete
+        If p.Index <> 1 Then p.Delete
     Next
     
     Set FlattenPagesToLayer = ActiveDocument.Pages.First.CreateLayer(LayerName)
@@ -1229,11 +1229,12 @@ Public Function FlattenPagesToLayer(ByVal LayerName As String) As Layer
 
 End Function
 
-Public Function GroupAndName( _
-                    ByVal Shapes As ShapeRange, ByVal Name As String _
+Public Function Group( _
+                    ByVal Shapes As ShapeRange, Optional ByVal Name As String _
                 ) As Shape
-    Set GroupAndName = Shapes.Group
-    GroupAndName.Name = Name
+    Shapes.FirstShape.Page.Activate
+    Set Group = Shapes.Group
+    If Not Name = vbNullString Then Group.Name = Name
 End Function
 
 'правильный интерсект
@@ -1820,23 +1821,27 @@ Public Property Get IsLowerCase(ByVal Str As String) As Boolean
     If VBA.LCase(Str) = Str Then IsLowerCase = True
 End Property
 
+Public Property Get IsNone(ByRef Unknown As Variant) As Boolean
+    If VBA.IsNull(Unknown) _
+    Or VBA.IsEmpty(Unknown) _
+    Or VBA.IsMissing(Unknown) Then
+        IsNone = True
+        Exit Property
+    End If
+    If VBA.IsObject(Unknown) Then
+        If Unknown Is Nothing Then
+            IsNone = True
+            Exit Property
+        End If
+    End If
+End Property
+
 Public Property Get IsUpperCase(ByVal Str As String) As Boolean
     If VBA.UCase(Str) = Str Then IsUpperCase = True
 End Property
 
-Public Property Get IsVoid(ByRef Some As Variant) As Boolean
-    If VBA.IsNull(Some) _
-    Or VBA.IsEmpty(Some) _
-    Or VBA.IsMissing(Some) Then
-        IsVoid = True
-        Exit Property
-    End If
-    If VBA.IsObject(Some) Then
-        If Some Is Nothing Then
-            IsVoid = True
-            Exit Property
-        End If
-    End If
+Public Property Get IsSome(ByRef Unknown As Variant) As Boolean
+    IsSome = Not IsNone(Unknown)
 End Property
 
 Public Property Get MatchAll( _
@@ -1916,6 +1921,12 @@ Public Property Get MinOfTwo( _
                         ByVal Value2 As Variant _
                     ) As Variant
     If Value1 < Value2 Then MinOfTwo = Value1 Else MinOfTwo = Value2
+End Property
+
+Public Property Get None() As Variant
+End Property
+
+Public Property Let None(RHS As Variant)
 End Property
 
 'возвращает True, если Value - это объект и при этом не Nothing
