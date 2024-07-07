@@ -1,7 +1,7 @@
 Attribute VB_Name = "LibCore"
 '===============================================================================
 '   Модуль          : LibCore
-'   Версия          : 2024.05.24
+'   Версия          : 2024.06.26
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Использован код : dizzy (из макроса CtC), Alex Vakulenko
 '                     и др.
@@ -11,6 +11,7 @@ Attribute VB_Name = "LibCore"
 '===============================================================================
 
 Option Explicit
+Option Base 1
 
 '===============================================================================
 ' # приватные переменные модуля
@@ -44,6 +45,18 @@ Public Const CUSTOM_ERROR = vbObjectError Or 32
 
 '===============================================================================
 ' # функции поиска и получения информации об объектах корела
+
+Public Property Get AllNodesInside( _
+                        ByVal Nodes As NodeRange, _
+                        ByVal Curve As Curve _
+                    ) As Boolean
+    Dim Node As Node
+    For Each Node In Nodes
+        If Not Curve.IsPointInside(Node.PositionX, Node.PositionY) Then _
+            Exit Property
+    Next Node
+    AllNodesInside = True
+End Property
 
 'возвращает среднее сторон шейпа/рэйнджа/страницы
 Public Property Get AverageDim(ByVal ShapeOrRangeOrPage As Object) As Double
@@ -142,9 +155,10 @@ Public Property Get FindShapesByNamePart( _
                         ByVal Shapes As ShapeRange, _
                         ByVal NamePart As String _
                     ) As ShapeRange
-    Set FindShapesByNamePart = FindAllShapes(Shapes).Shapes.FindShapes( _
-                                   Query:="@Name.Contains('" & NamePart & "')" _
-                               )
+    Set FindShapesByNamePart = _
+        FindAllShapes(Shapes).Shapes.FindShapes( _
+            Query:="@Name.Contains('" & NamePart & "')" _
+        )
 End Property
 
 Public Property Get FindShapesByOutlineColor( _
@@ -228,7 +242,7 @@ Public Property Get DiffWithinTolerance( _
                         ByVal Number2 As Variant, _
                         ByVal Tolerance As Variant _
                     ) As Boolean
-    DiffWithinTolerance = VBA.Abs(Number1 - Number2) <= Tolerance
+    DiffWithinTolerance = Abs(Number1 - Number2) <= Tolerance
 End Property
 
 'возвращает все шейпы на всех слоях текущей страницы, по умолчанию - без мастер-слоёв и без гайдов
@@ -248,6 +262,16 @@ Public Property Get FindShapesActivePageLayers( _
                 FindShapesActivePageLayers.AddRange tLayer.Shapes.All
     Next
     End If
+End Property
+
+Public Property Get FindShapesNotInside( _
+                        ByVal Shapes As ShapeRange _
+                    ) As ShapeRange
+    Set FindShapesNotInside = CreateShapeRange
+    Dim Shape As Shape
+    For Each Shape In Shapes
+        If Not ShapeInsideAny(Shape, Shapes) Then FindShapesNotInside.Add Shape
+    Next Shape
 End Property
 
 Public Property Get FindShapesWithText( _
@@ -480,6 +504,30 @@ Public Property Get GreaterDim(ByVal ShapeOrRangeOrPage As Object) As Double
     End If
 End Property
 
+Public Property Get HasSize(ByRef MaybeSome As Variant) As Boolean
+    If Not ObjectAssigned(MaybeSome) Then Exit Property
+    If TypeOf MaybeSome Is Shape Then GoTo Success
+    If TypeOf MaybeSome Is ShapeRange Then GoTo Success
+    If TypeOf MaybeSome Is Page Then GoTo Success
+    If TypeOf MaybeSome Is Rect Then GoTo Success
+    Exit Property
+Success:
+    HasSize = True
+End Property
+
+Public Property Get HasPosition(ByRef MaybeSome As Variant) As Boolean
+    If Not ObjectAssigned(MaybeSome) Then Exit Property
+    If TypeOf MaybeSome Is Shape Then GoTo Success
+    If TypeOf MaybeSome Is ShapeRange Then GoTo Success
+    If TypeOf MaybeSome Is Page Then GoTo Success
+    If TypeOf MaybeSome Is Rect Then GoTo Success
+    If TypeOf MaybeSome Is Node Then GoTo Success
+    If TypeOf MaybeSome Is Subpath Then GoTo Success
+    Exit Property
+Success:
+    HasPosition = True
+End Property
+
 Public Property Get IsColor(ByRef MaybeColor As Variant) As Boolean
     If Not ObjectAssigned(MaybeColor) Then Exit Property
     IsColor = TypeOf MaybeColor Is Color
@@ -488,6 +536,12 @@ End Property
 Public Property Get IsCurve(ByRef MaybeCurve As Variant) As Boolean
     If Not ObjectAssigned(MaybeCurve) Then Exit Property
     IsCurve = TypeOf MaybeCurve Is Curve
+End Property
+
+Public Property Get IsDark(ByVal Color As Color) As Boolean
+    Dim HSB As Color: Set HSB = Color.GetCopy
+    HSB.ConvertToHSB
+    IsDark = HSB.HSBBrightness < 128
 End Property
 
 Public Property Get IsDocument(ByRef MaybeDocument As Variant) As Boolean
@@ -822,12 +876,23 @@ Public Property Get NumberToFitArea( _
                         ByVal BoxToFit As Rect, _
                         ByVal Area As Rect _
                     ) As Long
-    NumberToFitArea = VBA.Fix(Area.Width / BoxToFit.Width) _
-                    * VBA.Fix(Area.Height / BoxToFit.Height)
+    NumberToFitArea = Fix(Area.Width / BoxToFit.Width) _
+                    * Fix(Area.Height / BoxToFit.Height)
 End Property
 
 Public Property Get PixelsToDocUnits(ByVal SizeInPixels As Long) As Double
     PixelsToDocUnits = ConvertUnits(SizeInPixels, cdrPixel, ActiveDocument.Unit)
+End Property
+
+Public Property Get RectInsideRect( _
+                        ByVal Rect1 As Rect, _
+                        ByVal Rect2 As Rect _
+                    ) As Boolean
+    RectInsideRect = _
+        (Rect1.Left > Rect2.Left) _
+    And (Rect1.Right < Rect2.Right) _
+    And (Rect1.Top < Rect2.Top) _
+    And (Rect1.Bottom > Rect2.Bottom)
 End Property
 
 Public Property Get ShapeHasOutline(ByVal Shape As Shape) As Boolean
@@ -840,6 +905,48 @@ Public Property Get ShapeHasUniformFill(ByVal Shape As Shape) As Boolean
     On Error GoTo Fail
     ShapeHasUniformFill = (Shape.Fill.Type = cdrUniformFill)
 Fail:
+End Property
+
+Public Property Get ShapeInsideAny( _
+                        ByVal Shape As Shape, _
+                        ByVal Shapes As ShapeRange _
+                    ) As Boolean
+    Dim Curve As Curve
+    Dim CurrentShape As Shape
+    For Each CurrentShape In Shapes
+        If Not CurrentShape Is Shape Then
+            If ShapeInsideShape(Shape, CurrentShape) Then
+                ShapeInsideAny = True
+                Exit Property
+            End If
+        End If
+    Next CurrentShape
+End Property
+
+Public Property Get ShapeInsideShape( _
+                        ByVal Shape1 As Shape, _
+                        ByVal Shape2 As Shape _
+                    ) As Boolean
+    Dim Curve1 As Curve
+    If HasCurve(Shape1) Then
+        Set Curve1 = Shape1.Curve
+    ElseIf HasDiplayCurve(Shape1) Then
+        Set Curve1 = Shape1.DisplayCurve
+    End If
+    
+    Dim Curve2 As Curve
+    If HasCurve(Shape2) Then
+        Set Curve2 = Shape2.Curve
+    ElseIf HasDiplayCurve(Shape2) Then
+        Set Curve2 = Shape2.DisplayCurve
+    End If
+    
+    If IsNone(Curve1) Or IsNone(Curve2) Then
+        ShapeInsideShape = _
+            RectInsideRect(Shape1.BoundingBox, Shape2.BoundingBox)
+    Else
+        ShapeInsideShape = AllNodesInside(Curve1.Nodes.All, Curve2)
+    End If
 End Property
 
 Public Property Get ShapeIsInGroup(ByVal Shape As Shape) As Boolean
@@ -975,30 +1082,6 @@ Public Sub Align( _
         End Select
     End With
 End Sub
-
-Public Property Get HasSize(ByRef MaybeSome As Variant) As Boolean
-    If Not ObjectAssigned(MaybeSome) Then Exit Property
-    If TypeOf MaybeSome Is Shape Then GoTo Success
-    If TypeOf MaybeSome Is ShapeRange Then GoTo Success
-    If TypeOf MaybeSome Is Page Then GoTo Success
-    If TypeOf MaybeSome Is Rect Then GoTo Success
-    Exit Property
-Success:
-    HasSize = True
-End Property
-
-Public Property Get HasPosition(ByRef MaybeSome As Variant) As Boolean
-    If Not ObjectAssigned(MaybeSome) Then Exit Property
-    If TypeOf MaybeSome Is Shape Then GoTo Success
-    If TypeOf MaybeSome Is ShapeRange Then GoTo Success
-    If TypeOf MaybeSome Is Page Then GoTo Success
-    If TypeOf MaybeSome Is Rect Then GoTo Success
-    If TypeOf MaybeSome Is Node Then GoTo Success
-    If TypeOf MaybeSome Is Subpath Then GoTo Success
-    Exit Property
-Success:
-    HasPosition = True
-End Property
 
 Public Function BreakApart(ByVal Shape As Shape) As ShapeRange
     If Shape.Curve.SubPaths.Count < 2 Then
@@ -1267,8 +1350,38 @@ Public Function Intersect( _
 End Function
 
 'инструмент Join Curves
-Public Function JoinCurves(ByVal ShapeOrShapes As Variant, ByVal Tolerance As Double)
+Public Function JoinCurves( _
+                    ByVal ShapeOrShapes As Variant, _
+                    ByVal Tolerance As Double _
+                )
     ShapeOrShapes.CustomCommand "ConvertTo", "JoinCurves", Tolerance
+End Function
+
+'ПРОВЕРИТЬ
+Public Function MakeContour( _
+                    ByRef Shape As Shape, _
+                    ByVal Offset As Double, _
+                    Optional ByVal CornerType As cdrContourCornerType _
+                ) As Shape
+    Dim Direction As cdrContourDirection
+    If Offset > 0 Then
+        Direction = cdrContourOutside
+    ElseIf Offset < 0 Then
+        Direction = cdrContourInside
+    Else
+        Exit Function
+    End If
+    Dim Contour As ShapeRange
+    With Shape.CreateContour( _
+            Direction:=Direction, _
+            Offset:=Abs(Offset), _
+            Steps:=1 _
+        )
+        .Contour.CornerType = CornerType
+        Set Contour = .Separate
+    End With
+    Set MakeContour = Contour(1)
+    Set Shape = Contour(2)
 End Function
 
 'не работает с поверклипом
@@ -1324,10 +1437,28 @@ Public Function MoveToLayer( _
 
 End Function
 
+Public Sub NameShapes(ByVal Shapes As ShapeRange, ByVal Name As String)
+    Dim Shape As Shape
+    For Each Shape In Shapes
+        Shape.Name = Name
+    Next Shape
+End Sub
+
 Public Sub ResizeImageToDocumentResolution(ByVal ImageShape As Shape)
     With ImageShape.Bitmap
         ImageShape.SetSize _
             PixelsToDocUnits(.SizeWidth), PixelsToDocUnits(.SizeHeight)
+    End With
+End Sub
+
+Public Sub ResizePageToShapes( _
+               Optional ByVal SideMult As Double = 1, _
+               Optional ByVal SideAdd As Double = 0 _
+            )
+    With ActivePage
+        .SetSize .Shapes.All.SizeWidth * SideMult + SideAdd, _
+                 .Shapes.All.SizeHeight * SideMult + SideAdd
+        .Shapes.All.SetPositionEx cdrCenter, .CenterX, .CenterY
     End With
 End Sub
 
@@ -1339,6 +1470,38 @@ Public Sub SegmentDelete(ByVal Segment As Segment)
         Set Segment = Segment.Subpath.LastSegment
     End If
     Segment.EndNode.Delete
+End Sub
+
+Public Sub SetDimensionPrecision( _
+               ByVal DimensionShape As Shape, _
+               ByVal Precision As Long _
+           )
+    SetDimensionProperty DimensionShape, "precision", Precision
+End Sub
+
+Public Sub SetDimensionProperty( _
+               ByVal DimensionShape As Shape, _
+               ByVal PropertyName As String, _
+               ByVal Value As Variant _
+           )
+    DimensionShape.Style.GetProperty("dimension") _
+        .SetProperty PropertyName, Value
+End Sub
+
+Public Sub SetDimensionShowUnits( _
+               ByVal DimensionShape As Shape, _
+               ByVal ShowUnits As Boolean _
+           )
+    SetDimensionProperty DimensionShape, "showUnits", ShowUnits
+End Sub
+
+Public Sub SetNoOutline( _
+               ByVal Shapes As ShapeRange _
+           )
+    Dim Shape As Shape
+    For Each Shape In Shapes
+        Shape.Outline.SetNoOutline
+    Next Shape
 End Sub
 
 'присвоить цвет абриса ренджу
@@ -1675,6 +1838,38 @@ Public Sub BoostFinish(Optional ByVal EndUndoGroup As Boolean = True)
     Application.Windows.Refresh
 End Sub
 
+'находит ближайшее к Value число, которое делится на Divisor без остатка
+Public Property Get ClosestDividend( _
+                        ByVal Value As Double, _
+                        ByVal Divisor As Double _
+                    ) As Double
+    Dim q As Long: q = Fix(Value / Divisor)
+    Dim n1 As Double: n1 = Divisor * q
+
+    Dim n2 As Double
+    If (Value * Divisor) > 0 Then
+        n2 = Divisor * (q + 1)
+    Else
+        n2 = Divisor * (q - 1)
+    End If
+
+    If Abs(Value - n1) < Abs(Value - n2) Then
+        ClosestDividend = n1
+    Else
+        ClosestDividend = n2
+    End If
+End Property
+
+Public Property Get Collection( _
+                        ParamArray Elements() As Variant _
+                    ) As VBA.Collection
+    Set Collection = New VBA.Collection
+    Dim Element As Variant
+    For Each Element In Elements
+        Collection.Add Element
+    Next Element
+End Property
+
 Public Property Get Contains( _
                         ByRef ContainerSeq As Variant, _
                         ByRef Item As Variant _
@@ -1935,7 +2130,7 @@ Public Property Get ObjectAssigned(ByRef Variable As Variant) As Boolean
     ObjectAssigned = Not Variable Is Nothing
 End Property
 
-Public Property Get Pack(ParamArray Items() As Variant) As Variant()
+Public Property Get Pack(ParamArray Items() As Variant) As Variant
     Dim Length As Long
     Length = UBound(Items) - LBound(Items) + 1
     If Length = 0 Then
