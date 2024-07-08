@@ -37,6 +37,7 @@ Private Type This
     AllowMinus As Boolean
 End Type
 Private This As This
+
 Private WithEvents Bound As MSForms.TextBox
 Attribute Bound.VB_VarHelpID = -1
 
