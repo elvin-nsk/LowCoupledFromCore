@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '===============================================================================
 '   Модуль          : Point
-'   Версия          : 2024.05.25
+'   Версия          : 2024.05.31
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
 '   Назначение      : Хранит координаты точки
@@ -45,6 +45,10 @@ End Function
 'todo
 Public Function GetDistanceFrom(ByVal Point As Point) As Double
 End Function
+
+Public Property Get Inside(ByVal Curve As Curve) As Boolean
+    Inside = Curve.IsPointInside(This.x, This.y)
+End Property
 
 Public Sub Move(Optional ByVal DeltaX As Double, Optional ByVal DeltaY As Double)
     With This
