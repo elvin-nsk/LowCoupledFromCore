@@ -37,7 +37,7 @@ Set MyList = List.New_
 - [MarksSetter](MarksSetter) - установщик меток реза, используется в `MotifTools`.
 - [MotifTools](MotifTools) - продвинутый укладчик изделий (мотивов) на лист с совмещением оборота, метками и прочими прибамбасами, основан на `Composer`'е и является его логическим развитием.
 - [Point](Point) - хранит две координаты точки.
-- [Presets](Presets) - сохранение настроек в json-файле, с управлением пресетами и шаблоном формы.
+- [Json](Json) - сохранение настроек в json-файле, с управлением пресетами и шаблоном формы.
 - [ProgressBar](ProgressBar) - как ни странно.
 - [RecordList](RecordList) - коллекция словарей с поиском по всем полям.
 - [RecordListToTableBinder](RecordListToTableBinder) - класс для привязки `RecordList`а к `TableFile`.
