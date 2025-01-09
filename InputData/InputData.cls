@@ -7,66 +7,69 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Получение исходного пользовательского выбора."
-'@ModuleDescription("Получение исходного пользовательского выбора.")
+Attribute VB_Description = "РџРѕР»СѓС‡РµРЅРёРµ РёСЃС…РѕРґРЅРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРѕРіРѕ РІС‹Р±РѕСЂР°."
+'===============================================================================
+'   РњРѕРґСѓР»СЊ          : InputData
+'   Р’РµСЂСЃРёСЏ          : 2025.01.09
+'   РђРІС‚РѕСЂ           : elvin-nsk (me@elvin.nsk.ru)
+'   РЎР°Р№С‚            : https://github.com/elvin-nsk/LowCoupledFromCore
+'   РќР°Р·РЅР°С‡РµРЅРёРµ      : РџРѕР»СѓС‡РµРЅРёРµ РёСЃС…РѕРґРЅРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРѕРіРѕ РІС‹Р±РѕСЂР°
+'   Р—Р°РІРёСЃРёРјРѕСЃС‚Рё     : РЅРµС‚
+'===============================================================================
 
+'@ModuleDescription("РџРѕР»СѓС‡РµРЅРёРµ РёСЃС…РѕРґРЅРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРѕРіРѕ РІС‹Р±РѕСЂР°.")
 '@PredeclaredId
 Option Explicit
 
 '===============================================================================
 
-Private Const DefaultErrNoDocument As String = "Нет активного документа."
+Private Const DefaultErrNoDocument As String = "РќРµС‚ Р°РєС‚РёРІРЅРѕРіРѕ РґРѕРєСѓРјРµРЅС‚Р°."
 Private Const DefaultErrLayerDisabled As String = _
-    "Текущий слой закрыт."
-Private Const DefaultErrNoSelection As String = "Выделите объекты."
-Private Const DefaultErrPageEmpty As String = "Страница пустая."
+    "РўРµРєСѓС‰РёР№ СЃР»РѕР№ Р·Р°РєСЂС‹С‚."
+Private Const DefaultErrNoSelection As String = "Р’С‹РґРµР»РёС‚Рµ РѕР±СЉРµРєС‚С‹."
+Private Const DefaultErrPageEmpty As String = "РЎС‚СЂР°РЅРёС†Р° РїСѓСЃС‚Р°СЏ."
 
-Private Type typeThis
+Private Type This
     Document As Document
-    IsSuccess As Boolean
+    ExpectedObject As Object
     Layer As Layer
+    Ok As Boolean
     Page As Page
     Shape As Shape
     Shapes As ShapeRange
 End Type
-Private This As typeThis
+Private This As This
 
 '===============================================================================
 
-Public Function RequestDocumentOrPage( _
+Public Function ExpectDocument( _
                     Optional ByVal ErrNoDocument As String = _
-                        DefaultErrNoDocument, _
-                    Optional ByVal PageCanBeEmpty As Boolean = False, _
-                    Optional ByVal ErrPageEmpty As String = _
-                        DefaultErrPageEmpty _
+                        DefaultErrNoDocument _
                 ) As InputData
-    Set RequestDocumentOrPage = New InputData
+    Set ExpectDocument = New InputData
     If ActiveDocument Is Nothing Then
         VBA.MsgBox ErrNoDocument, vbExclamation
         Exit Function
     End If
-    If (ActiveDocument.ActivePage.Shapes.Count = 0) And Not PageCanBeEmpty Then
-        VBA.MsgBox ErrPageEmpty, vbExclamation
-        Exit Function
-    End If
-    With RequestDocumentOrPage
-        .InjectSuccess True
+    With ExpectDocument
+        .InjectOk True
         .InjectDocument ActiveDocument
         .InjectPage .Document.ActivePage
         .InjectLayer GetFirstNonSpecialOrActiveLayer(.Page)
         .InjectShapes .Page.Shapes.All
         .InjectShape .Page.Shapes.First
+        .InjectExpected .Document
     End With
 End Function
 
-Public Function RequestLayer( _
+Public Function ExpectLayer( _
                     Optional ByVal ErrNoDocument As String = _
                         DefaultErrNoDocument, _
                     Optional ByVal LayerMustBeEnabled As Boolean = False, _
                     Optional ByVal ErrLayerDisabled As String = _
                         DefaultErrLayerDisabled _
                 ) As InputData
-    Set RequestLayer = New InputData
+    Set ExpectLayer = New InputData
     If ActiveDocument Is Nothing Then
         VBA.MsgBox ErrNoDocument, vbExclamation
         Exit Function
@@ -75,17 +78,45 @@ Public Function RequestLayer( _
         VBA.MsgBox ErrLayerDisabled, vbExclamation
         Exit Function
     End If
-    With RequestLayer
-        .InjectSuccess True
+    With ExpectLayer
+        .InjectOk True
         .InjectLayer ActiveLayer
         .InjectPage .Layer.Page
         .InjectDocument .Page.Parent.Parent
         .InjectShapes .Layer.Shapes.All
         .InjectShape .Shapes.FirstShape
+        .InjectExpected .Layer
     End With
 End Function
 
-Public Function RequestShapes( _
+Public Function ExpectPage( _
+                    Optional ByVal ErrNoDocument As String = _
+                        DefaultErrNoDocument, _
+                    Optional ByVal PageCanBeEmpty As Boolean = False, _
+                    Optional ByVal ErrPageEmpty As String = _
+                        DefaultErrPageEmpty _
+                ) As InputData
+    Set ExpectPage = New InputData
+    If ActiveDocument Is Nothing Then
+        VBA.MsgBox ErrNoDocument, vbExclamation
+        Exit Function
+    End If
+    If (ActiveDocument.ActivePage.Shapes.Count = 0) And Not PageCanBeEmpty Then
+        VBA.MsgBox ErrPageEmpty, vbExclamation
+        Exit Function
+    End If
+    With ExpectPage
+        .InjectOk True
+        .InjectDocument ActiveDocument
+        .InjectPage .Document.ActivePage
+        .InjectLayer GetFirstNonSpecialOrActiveLayer(.Page)
+        .InjectShapes .Page.Shapes.All
+        .InjectShape .Page.Shapes.First
+        .InjectExpected .Page
+    End With
+End Function
+
+Public Function ExpectShapes( _
                     Optional ByVal ErrNoDocument As String = _
                         DefaultErrNoDocument, _
                     Optional ByVal LayerMustBeEnabled As Boolean = False, _
@@ -94,7 +125,7 @@ Public Function RequestShapes( _
                     Optional ByVal ErrNoSelection As String = _
                         DefaultErrNoSelection _
                 ) As InputData
-    Set RequestShapes = New InputData
+    Set ExpectShapes = New InputData
     If ActiveDocument Is Nothing Then
         VBA.MsgBox ErrNoDocument, vbExclamation
         Exit Function
@@ -103,16 +134,17 @@ Public Function RequestShapes( _
         VBA.MsgBox ErrNoSelection, vbInformation
         Exit Function
     End If
-    With RequestShapes
+    With ExpectShapes
         .InjectDocument ActiveDocument
         .InjectShapes ActiveSelectionRange
         .InjectShape .Shapes.FirstShape
         .InjectPage .Shape.Page
         .InjectLayer .Shape.Layer
-        .InjectSuccess LayerIsOk(ActiveLayer, LayerMustBeEnabled)
-        If Not .IsSuccess Then
+        .InjectOk LayerIsOk(ActiveLayer, LayerMustBeEnabled)
+        If Not .Ok Then
             VBA.MsgBox ErrLayerDisabled, vbExclamation
         End If
+        .InjectExpected .Shapes
     End With
 End Function
 
@@ -120,8 +152,12 @@ Friend Sub InjectDocument(ByVal Document As Document)
     Set This.Document = Document
 End Sub
 
-Friend Sub InjectSuccess(ByVal Success As Boolean)
-    This.IsSuccess = Success
+Friend Sub InjectExpected(ByVal ExpectedObject As Object)
+    Set This.ExpectedObject = ExpectedObject
+End Sub
+
+Friend Sub InjectOk(ByVal Ok As Boolean)
+    This.Ok = Ok
 End Sub
 
 Friend Sub InjectLayer(ByVal Layer As Layer)
@@ -146,17 +182,18 @@ Public Property Get Document() As Document
     Set Document = This.Document
 End Property
 
-Public Property Get IsError() As Boolean
-    IsError = Not This.IsSuccess
-End Property
-
-Public Property Get IsSuccess() As Boolean
-    IsSuccess = This.IsSuccess
+Public Property Get Fail() As Boolean
+    Fail = Not This.Ok
 End Property
 
 Public Property Get Layer() As Layer
     Set Layer = This.Layer
 End Property
+
+Public Function Ok(Optional ByRef ExpectedObject As Object) As Boolean
+    Ok = This.Ok
+    Set ExpectedObject = This.ExpectedObject
+End Function
 
 Public Property Get Page() As Page
     Set Page = This.Page
