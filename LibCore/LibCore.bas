@@ -1,7 +1,7 @@
 Attribute VB_Name = "LibCore"
 '===============================================================================
 '   Модуль          : LibCore
-'   Версия          : 2024.12.04
+'   Версия          : 2025.01.13
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Использован код : dizzy (из макроса CtC), Alex Vakulenko
 '                     и др.
@@ -1875,11 +1875,10 @@ End Sub
 
 'загружает файл в строку
 Public Function ReadFile(ByVal File As String) As String
-    Dim tFileNum As Long
-    tFileNum = FreeFile
-    Open File For Input As #tFileNum
-    ReadFile = Input(LOF(tFileNum), tFileNum)
-    Close #tFileNum
+    Dim FileNum As Long: FileNum = FreeFile
+    Open File For Input As #FileNum
+    ReadFile = Input(LOF(FileNum), FileNum)
+    Close #FileNum
 End Function
 
 'загружает файл в строку через ADODB, можно задать кодировку

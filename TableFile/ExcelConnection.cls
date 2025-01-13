@@ -7,22 +7,22 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-Attribute VB_Description = "подключение к файлу экселя через ADODB."
+Attribute VB_Description = "РїРѕРґРєР»СЋС‡РµРЅРёРµ Рє С„Р°Р№Р»Сѓ СЌРєСЃРµР»СЏ С‡РµСЂРµР· ADODB."
 '===============================================================================
-'   Модуль          : ExcelConnection
-'   Версия          : 2023.09.01
-'   Автор           : elvin-nsk (me@elvin.nsk.ru)
-'   Описание        : подключение к файлу экселя через ADODB
-'   Использование   :
-'   Зависимости     : LibCore, ITableFile
+'   РњРѕРґСѓР»СЊ          : ExcelConnection
+'   Р’РµСЂСЃРёСЏ          : 2025.01.13
+'   РђРІС‚РѕСЂ           : elvin-nsk (me@elvin.nsk.ru)
+'   РћРїРёСЃР°РЅРёРµ        : РїРѕРґРєР»СЋС‡РµРЅРёРµ Рє С„Р°Р№Р»Сѓ СЌРєСЃРµР»СЏ С‡РµСЂРµР· ADODB
+'   РСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ   :
+'   Р—Р°РІРёСЃРёРјРѕСЃС‚Рё     : LibCore, TableFile
 '===============================================================================
 
-'@ModuleDescription("подключение к файлу экселя через ADODB.")
+'@ModuleDescription("РїРѕРґРєР»СЋС‡РµРЅРёРµ Рє С„Р°Р№Р»Сѓ СЌРєСЃРµР»СЏ С‡РµСЂРµР· ADODB.")
 
 '@PredeclaredId
 Option Explicit
 
-Implements ITableFile
+Implements TableFile
 
 '===============================================================================
 
@@ -35,7 +35,7 @@ Private Const adSchemaTables = 20
 Private Const adEditInProgress = 1
 Private Const adResyncAllValues = 2
 
-Private Type typeThis
+Private Type This
     File As String
     SheetName As String
     StartingRow As Long
@@ -46,7 +46,7 @@ Private Type typeThis
     Connection As Object
     RecordSet As Object
 End Type
-Private This As typeThis
+Private This As This
 
 '===============================================================================
 
@@ -55,7 +55,7 @@ Public Function Create( _
                     Optional ByVal SheetName As String, _
                     Optional ByVal StartingRow As Long = 1, _
                     Optional ByVal StartingColumn As Long = 1 _
-                ) As ITableFile
+                ) As TableFile
     With New ExcelConnection
         Set Create = _
             .Init(FileToBind, SheetName, StartingRow, StartingColumn, False)
@@ -67,7 +67,7 @@ Public Function CreateReadOnly( _
                     Optional ByVal SheetName As String, _
                     Optional ByVal StartingRow As Long = 1, _
                     Optional ByVal StartingColumn As Long = 1 _
-                ) As ITableFile
+                ) As TableFile
     With New ExcelConnection
         Set CreateReadOnly = _
             .Init(FileToBind, SheetName, StartingRow, StartingColumn, True)
@@ -90,7 +90,7 @@ Friend Function Init( _
                     ByVal StartingRow As Long, _
                     ByVal StartingColumn As Long, _
                     Optional ByVal ReadOnly As Boolean = False _
-                ) As ITableFile
+                ) As TableFile
     With This
         .File = FileToBind
         .SheetName = SheetName
@@ -106,7 +106,7 @@ End Function
 
 '===============================================================================
 
-Private Property Let ITableFile_Cell( _
+Private Property Let TableFile_Cell( _
                          ByVal Row As Long, _
                          ByVal Column As Long, _
                          RHS As String _
@@ -120,7 +120,7 @@ Private Property Let ITableFile_Cell( _
         .Fields(Column + This.ColumnOffset).Value = RHS
     End With
 End Property
-Private Property Get ITableFile_Cell( _
+Private Property Get TableFile_Cell( _
                          ByVal Row As Long, _
                          ByVal Column As Long _
                      ) As String
@@ -129,12 +129,12 @@ Private Property Get ITableFile_Cell( _
         If Not tryMoveCursorToRow(Row) Then Exit Property
         TempVar = .Fields(Column + This.ColumnOffset).Value
         If Not VBA.IsNull(TempVar) Then
-            ITableFile_Cell = TempVar
+            TableFile_Cell = TempVar
         End If
     End With
 End Property
 
-Private Sub ITableFile_ForceClose()
+Private Sub TableFile_Dispose()
     With This
         If Not .RecordSet Is Nothing Then
             If .RecordSet.EditMode = adEditInProgress Then .RecordSet.CancelBatch
@@ -148,30 +148,30 @@ Private Sub ITableFile_ForceClose()
     End With
 End Sub
 
-Private Sub ITableFile_ForceLoad()
+Private Sub TableFile_ForceLoad()
     ThrowNotImplemented "ForceLoad"
 End Sub
 
-Private Sub ITableFile_ForceSave()
+Private Sub TableFile_ForceSave()
     With This
         If .RecordSet.EditMode = adEditInProgress Then .RecordSet.Update
     End With
 End Sub
 
-Private Property Get ITableFile_MaxColumn() As Long
-    ITableFile_MaxColumn = This.RecordSet.Fields.Count
+Private Property Get TableFile_MaxColumn() As Long
+    TableFile_MaxColumn = This.RecordSet.Fields.Count
 End Property
 
-Private Property Get ITableFile_MaxRow() As Long
-    ITableFile_MaxRow = This.RecordSet.RecordCount
+Private Property Get TableFile_MaxRow() As Long
+    TableFile_MaxRow = This.RecordSet.RecordCount
 End Property
 
-Private Property Get ITableFile_ReadOnly() As Boolean
-    ITableFile_ReadOnly = This.ReadOnly
+Private Property Get TableFile_ReadOnly() As Boolean
+    TableFile_ReadOnly = This.ReadOnly
 End Property
 
-Private Property Get ITableFile_Self() As ITableFile
-    Set ITableFile_Self = Me
+Private Property Get TableFile_Self() As TableFile
+    Set TableFile_Self = Me
 End Property
 
 '===============================================================================
@@ -226,6 +226,6 @@ Private Sub ThrowNotImplemented(Optional ByVal FunctionName As String = "Functio
     Throw FunctionName & " not implemented"
 End Sub
 
-Private Property Get Self() As ITableFile
+Private Property Get Self() As TableFile
     Set Self = Me
 End Property

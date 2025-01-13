@@ -41,17 +41,17 @@ Private NextSep1 As Long
 Private NextSep2 As Long
 Private NextSep3 As Long
 
-Private Type typeThis
+Private Type This
     Delimiter As String
     CsvUtilsAnyErrorIsFatal As Boolean  'default False
 End Type
-Private This As typeThis
+Private This As This
 
 '===============================================================================
 
-Public Function Create(Optional ByVal Delimiter As String = ";") As CsvUtils
+Public Function New_(Optional ByVal Delimiter As String = ";") As CsvUtils
     With New CsvUtils
-        Set Create = .Init(Delimiter)
+        Set New_ = .Init(Delimiter)
     End With
 End Function
 
@@ -304,7 +304,7 @@ End Function
 
 '
 ' ParseCsvToDictionary
-'        return Dictionary whose key is value of KeyColumn and whose value is a Collection of fields in the record
+' return Dictionary whose key is value of KeyColumn and whose value is a Collection of fields in the record
 '
 Public Function ParseCsvToDictionary( _
                     ByRef CsvText As String, _
@@ -349,7 +349,7 @@ End Function
 ' find all separators in csvText
 ' - RowCount, ColCount = size of array in Csv
 ' - sepArray1234 = array of field info.    Their size => number of fields + 1.    Index Start with 0, sepArray1234(number of fields) = 0
-'                                    SepArray1 = Start pos of field, SepArray2 = field length, SepArray3 = NextSepType, SepArray4 = number of double quotes in field
+' SepArray1 = Start pos of field, SepArray2 = field length, SepArray3 = NextSepType, SepArray4 = number of double quotes in field
 Private Sub ParseCsv( _
                 ByRef RowCount As Long, _
                 ByRef ColCount As Long, _
@@ -422,14 +422,14 @@ Head:
 End Sub
 
 ' Find next separator (comma, CR, LF, CRLF) in inText starting with the position "Start"
-'     FieldStart = Start position of found field
-'     FieldLen     = length of found field
-'     Start = found separator + 1 (Start of next field)
-'     NextSepType = found separator type (1=comma, 2=CR or CRLF, 3=LF)
-'     QuoteCount = double quotation count in found field
-'     return False if there is no next separator
-'     * found field includes double quote (not yet parsing quotation syntax)
-'     * assuming CR or LF exists at EOF
+' FieldStart = Start position of found field
+' FieldLen     = length of found field
+' Start = found separator + 1 (Start of next field)
+' NextSepType = found separator type (1=comma, 2=CR or CRLF, 3=LF)
+' QuoteCount = double quotation count in found field
+' return False if there is no next separator
+' * found field includes double quote (not yet parsing quotation syntax)
+' * assuming CR or LF exists at EOF
 Private Sub FindNextSeparatorInit(ByRef inText As String)
     Dim LenText As Long
     LenText = Len(inText)
@@ -536,7 +536,7 @@ End Sub
 
 '
 ' Trim all before and after doube-quote
-'     * Text MUST include two or more double-quotes (")
+' * Text MUST include two or more double-quotes (")
 Private Function TrimQuotes(ByRef Text As String) As String
     'If InStr(Text, """") = 0 Then Err.Raise 9999, "", "program error"
     Dim p0 As Long, p1 As Long
