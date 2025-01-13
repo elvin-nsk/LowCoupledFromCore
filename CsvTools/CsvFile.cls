@@ -143,7 +143,7 @@ Private Property Get Columns() As Long
 End Property
 
 Private Property Get TableFile_MaxColumn() As Long
-    TableFile_MaxColumn = Columns
+    TableFile_MaxColumn = Columns - (This.StartingColumn - 1)
 End Property
 
 Private Property Get Rows() As Long
@@ -151,7 +151,7 @@ Private Property Get Rows() As Long
 End Property
 
 Private Property Get TableFile_MaxRow() As Long
-    TableFile_MaxRow = Rows
+    TableFile_MaxRow = Rows - (This.StartingRow - 1)
 End Property
 
 Private Property Get TableFile_ReadOnly() As Boolean
