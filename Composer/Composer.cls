@@ -8,12 +8,12 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '===============================================================================
-'   Модуль          : Composer
-'   Версия          : 2024.02.13
-'   Автор           : elvin-nsk (me@elvin.nsk.ru)
-'   Сайт            : https://github.com/elvin-nsk/LowCoupledFromCore
-'   Назначение      : Укладчик шейпов/ренджей по строкам
-'   Зависимости     : Point
+'   РњРѕРґСѓР»СЊ          : Composer
+'   Р’РµСЂСЃРёСЏ          : 2025.01.19
+'   РђРІС‚РѕСЂ           : elvin-nsk (me@elvin.nsk.ru)
+'   РЎР°Р№С‚            : https://github.com/elvin-nsk/LowCoupledFromCore
+'   РќР°Р·РЅР°С‡РµРЅРёРµ      : РЈРєР»Р°РґС‡РёРє С€РµР№РїРѕРІ/СЂРµРЅРґР¶РµР№ РїРѕ СЃС‚СЂРѕРєР°Рј
+'   Р—Р°РІРёСЃРёРјРѕСЃС‚Рё     : Point
 '===============================================================================
 
 '@PredeclaredId
@@ -42,7 +42,7 @@ Private This As This
 
 '===============================================================================
 
-Public Function NewAndCompose( _
+Public Function NewCompose( _
                     ByVal Elements As Collection, _
                     Optional ByVal StartingPoint As Point, _
                     Optional ByVal MaxPlacesInWidth As Long, _
@@ -52,8 +52,8 @@ Public Function NewAndCompose( _
                     Optional ByVal HorizontalSpace As Double, _
                     Optional ByVal VerticalSpace As Double _
                 ) As Composer
-    Set NewAndCompose = New Composer
-    NewAndCompose.Inject _
+    Set NewCompose = New Composer
+    NewCompose.Inject _
         Elements, StartingPoint, _
         MaxPlacesInWidth, MaxPlacesInHeight, _
         MaxWidth, MaxHeight, _

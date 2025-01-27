@@ -21,16 +21,16 @@ For Each Shape In ActiveSelectionRange
 Next Shape
 
 ' инициализируем и запускаем Composer с этой коллекцией:
-With Composer.NewAndCompose( _
-                  Elements:=ComposerElements, _
-                  StartingPoint:=FreePoint.Create(0, 297), _
-                  MaxPlacesInWidth:=3, _
-                  MaxPlacesInHeight:=4, _
-                  MaxWidth:=0, _
-                  MaxHeight:=297, _
-                  HorizontalSpace:=0, _
-                  VerticalSpace:=0 _
-              )
+With Composer.NewCompose( _
+    Elements:=ComposerElements, _
+    StartingPoint:=FreePoint.New_(0, 297), _
+    MaxPlacesInWidth:=3, _
+    MaxPlacesInHeight:=4, _
+    MaxWidth:=0, _
+    MaxHeight:=297, _
+    HorizontalSpace:=0, _
+    VerticalSpace:=0 _
+)
 End With
 ```
 
