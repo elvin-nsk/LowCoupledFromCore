@@ -8,12 +8,12 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '===============================================================================
-'   Ìîäóëü          : TextBoxHandler
-'   Âåðñèÿ          : 2024.02.21
-'   Àâòîð           : elvin-nsk (me@elvin.nsk.ru)
-'   Ñàéò            : https://github.com/elvin-nsk/LowCoupledFromCore
-'   Íàçíà÷åíèå      : ñîõðàíåíèå çíà÷åíèé TextBox íà ôîðìå â çàäàííîì äèàïàçîíå
-'   Çàâèñèìîñòè     : íåò
+'   ÐœÐ¾Ð´ÑƒÐ»ÑŒ          : TextBoxHandler
+'   Ð’ÐµÑ€ÑÐ¸Ñ          : 2025.01.19
+'   ÐÐ²Ñ‚Ð¾Ñ€           : elvin-nsk (me@elvin.nsk.ru)
+'   Ð¡Ð°Ð¹Ñ‚            : https://github.com/elvin-nsk/LowCoupledFromCore
+'   ÐÐ°Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ      : ÑÐ¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¸Ðµ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ð¹ TextBox Ð½Ð° Ñ„Ð¾Ñ€Ð¼Ðµ Ð² Ð·Ð°Ð´Ð°Ð½Ð½Ð¾Ð¼ Ð´Ð¸Ð°Ð¿Ð°Ð·Ð¾Ð½Ðµ
+'   Ð—Ð°Ð²Ð¸ÑÐ¸Ð¼Ð¾ÑÑ‚Ð¸     : Ð½ÐµÑ‚
 '===============================================================================
 
 '@PredeclaredId
@@ -86,7 +86,7 @@ Attribute Value.VB_UserMemId = 0
     End Select
 End Property
 Public Property Let Value(ByVal RHS As Variant)
-    Bound.Value = VBA.CStr(RHS)
+    Bound.Value = CStr(RHS)
 End Property
 
 Public Property Get Self() As TextBoxHandler
@@ -166,8 +166,8 @@ Private Sub GuardRangeDbl( _
             )
     With Bound
         If .Value = "" Or .Value = "-" Then Exit Sub
-        If VBA.CDbl(.Value) > Max Then .Value = VBA.CStr(Max)
-        If VBA.CDbl(.Value) < Min Then .Value = VBA.CStr(Min)
+        If CDbl(.Value) > Max Then .Value = CStr(Max)
+        If CDbl(.Value) < Min Then .Value = CStr(Min)
     End With
 End Sub
 
@@ -177,8 +177,8 @@ Private Sub GuardRangeLng( _
             )
     With Bound
         If .Value = "" Or .Value = "-" Then Exit Sub
-        If VBA.CLng(.Value) > Max Then .Value = VBA.CStr(Max)
-        If VBA.CLng(.Value) < Min Then .Value = VBA.CStr(Min)
+        If CLng(.Value) > Max Then .Value = CStr(Max)
+        If CLng(.Value) < Min Then .Value = CStr(Min)
     End With
 End Sub
 
