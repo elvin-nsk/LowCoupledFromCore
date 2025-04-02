@@ -23,7 +23,7 @@ Next Shape
 ' инициализируем и запускаем Composer с этой коллекцией:
 With Composer.NewCompose( _
     Elements:=ComposerElements, _
-    StartingPoint:=FreePoint.New_(0, 297), _
+    StartingPoint:=Point.New_(0, 297), _
     MaxPlacesInWidth:=3, _
     MaxPlacesInHeight:=4, _
     MaxWidth:=0, _
