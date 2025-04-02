@@ -1,17 +1,16 @@
 Attribute VB_Name = "LibCore"
 '===============================================================================
 '   Модуль          : LibCore
-'   Версия          : 2025.01.23
+'   Версия          : 2025.02.27
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
-'   Использован код : dizzy (из макроса CtC), Alex Vakulenko
-'                     и др.
+'   Использован код : Alex Vakulenko и др.
 '   Описание        : библиотека функций для макросов
-'   Использование   :
 '   Зависимости     : самодостаточный
 '===============================================================================
 
-Option Explicit
 Option Base 1
+Option Compare Text
+Option Explicit
 
 '===============================================================================
 ' # внешние функции
@@ -66,9 +65,25 @@ Public Const CUSTOM_ERROR = vbObjectError Or 32
 '===============================================================================
 ' # мнимые константы
 
+Public Property Get Missing() As Variant
+    Missing = AlwaysMissing
+End Property
+
 Public Property Get None() As Variant
 End Property
 Public Property Let None(RHS As Variant)
+End Property
+
+Public Property Get Red() As Color
+    Set Red = CreateRGBColor(255, 0, 0)
+End Property
+
+Public Property Get Green() As Color
+    Set Green = CreateRGBColor(0, 255, 0)
+End Property
+
+Public Property Get Blue() As Color
+    Set Blue = CreateRGBColor(0, 0, 255)
 End Property
 
 Public Property Get Cyan() As Color
@@ -518,6 +533,18 @@ Public Property Get GetRotatedRect(ByVal Rect As Rect) As Rect
     GetRotatedRect.Inflate _
         -HalfDifference, HalfDifference, -HalfDifference, HalfDifference
 End Property
+
+'находит шейп с данным именем, включая шейпы в поверклипах, с рекурсией
+Public Function GetShapeByName( _
+                        ByVal Shapes As ShapeRange, _
+                        ByVal Name As String, _
+                        ByRef Shape As Shape _
+                    ) As BooleanResult
+    Dim FoundShapes As ShapeRange: Set FoundShapes = FindShapesByName(Shapes, Name)
+    If FoundShapes.Count = 0 Then Exit Function
+    Set Shape = FoundShapes.FirstShape
+    GetShapeByName = Ok
+End Function
 
 Public Property Get GetTopOrderShape(ByVal Shapes As ShapeRange) As Shape
     If Shapes.Count = 0 Then Exit Property
@@ -1056,6 +1083,19 @@ Public Property Get SpaceBox( _
     SpaceBox.Inflate Space, Space, Space, Space
 End Property
 
+Public Function TryDelete(ByVal Removable As Variant) As BooleanResult
+    If IsNone(Removable) Then Exit Function
+    #If DebugMode = 0 Then
+    On Error GoTo Fail
+    #End If
+    Removable.Delete
+    #If DebugMode = 0 Then
+    On Error GoTo 0
+    #End If
+    TryDelete = Ok
+Fail:
+End Function
+
 'возвращает Outline если или Empty
 Public Property Get TryGetOutline(ByVal Shape As Shape) As Variant
     If ShapeHasOutline(Shape) Then Set TryGetOutline = Shape.Outline
@@ -1285,25 +1325,29 @@ Public Function DuplicateActivePage( _
                     ByVal NumberOfPages As Long, _
                     Optional ByVal ExcludeLayerName As String = "" _
                 ) As Page
-    Dim tRange As ShapeRange
-    Dim tShape As Shape, sDuplicate As Shape
-    Dim tProps As LayerProperties
-    Dim i&
+    #If DebugMode = 1 Then
+    Debug.Assert NumberOfPages > 0
+    #End If
+    
+    Dim Shapes As ShapeRange
+    Dim TempShape As Shape, ShapeDuplicate As Shape
+    Dim LayerProperties As LayerProperties
+    Dim i As Long
     For i = 1 To NumberOfPages
-        Set tRange = FindShapesActivePageLayers
+        Set Shapes = FindShapesActivePageLayers
         Set DuplicateActivePage = _
             ActiveDocument.InsertPages(1, False, ActivePage.Index)
         DuplicateActivePage.SizeHeight = ActivePage.SizeHeight
         DuplicateActivePage.SizeWidth = ActivePage.SizeWidth
-        For Each tShape In tRange.ReverseRange
-            If tShape.Layer.Name <> ExcludeLayerName Then
-                LayerPropsPreserveAndReset tShape.Layer, tProps
-                Set sDuplicate = tShape.Duplicate
-                sDuplicate.MoveToLayer _
-                    FindLayerDuplicate(DuplicateActivePage, tShape.Layer)
-                LayerPropsRestore tShape.Layer, tProps
+        For Each TempShape In Shapes.ReverseRange
+            If Not TempShape.Layer.Name = ExcludeLayerName Then
+                LayerPropsPreserveAndReset TempShape.Layer, LayerProperties
+                Set ShapeDuplicate = TempShape.Duplicate
+                ShapeDuplicate.MoveToLayer _
+                    FindLayerDuplicate(DuplicateActivePage, TempShape.Layer)
+                LayerPropsRestore TempShape.Layer, LayerProperties
             End If
-        Next tShape
+        Next TempShape
     Next i
 End Function
 
@@ -1819,8 +1863,33 @@ End Function
 
 Public Function AddProperEndingToPath(ByVal Path As String) As String
     If Not VBA.Right$(Path, 1) = "\" Then AddProperEndingToPath = Path & "\" _
-    Else: AddProperEndingToPath = Path
+    Else AddProperEndingToPath = Path
 End Function
+
+Public Sub AppendFilesFromFolder( _
+               ByVal RootFolder As Scripting.Folder, _
+               ByVal ExistingCollection As Collection, _
+               Optional ByVal MatchPatternsSeq As Variant, _
+               Optional ByVal SearchSubfolders As Boolean = True _
+           )
+    Dim File As Scripting.File
+    If VBA.IsMissing(MatchPatternsSeq) Then
+        For Each File In RootFolder.Files
+            ExistingCollection.Add File
+        Next File
+    Else
+        For Each File In RootFolder.Files
+            If LikeAny(File, MatchPatternsSeq) Then ExistingCollection.Add File
+        Next File
+    End If
+    Dim Folder As Scripting.Folder
+    If SearchSubfolders Then
+        For Each Folder In RootFolder.SubFolders
+            AppendFilesFromFolder _
+                Folder, ExistingCollection, MatchPatternsSeq, SearchSubfolders
+        Next Folder
+    End If
+End Sub
 
 'существует ли файл или папка (папка должна заканчиваться на "\")
 Public Property Get FileExists(ByVal File As String) As Boolean
@@ -1831,9 +1900,30 @@ End Property
 Public Property Get FindFileInGMSFolders(ByVal FileName As String) As String
     FindFileInGMSFolders = GMSManager.UserGMSPath & FileName
     If Not FileExists(FindFileInGMSFolders) Then _
-        FindFileInGMSFolders = GMSManager.GMSPath & FileName
+        FindFileInGMSFolders = GMSManager.GmsPath & FileName
     If Not FileExists(FindFileInGMSFolders) Then _
         FindFileInGMSFolders = ""
+End Property
+
+Public Property Get FindFiles( _
+                        ByVal RootPath As String, _
+                        Optional ByVal MatchPatternsSeq As Variant, _
+                        Optional ByVal SearchSubfolders As Boolean = True _
+                    ) As Collection
+    Set FindFiles = New Collection
+    Dim RootFolder As Scripting.Folder: Set RootFolder = FSO.GetFolder(RootPath)
+    AppendFilesFromFolder _
+        RootFolder, FindFiles, MatchPatternsSeq, SearchSubfolders
+End Property
+
+Public Property Get FindFilesInFolder( _
+                        ByVal RootFolder As Scripting.Folder, _
+                        Optional ByVal MatchPatternsSeq As Variant, _
+                        Optional ByVal SearchSubfolders As Boolean = True _
+                    ) As Collection
+    Set FindFilesInFolder = New Collection
+    AppendFilesFromFolder _
+        RootFolder, FindFilesInFolder, MatchPatternsSeq, SearchSubfolders
 End Property
 
 Public Property Get FSO() As Scripting.FileSystemObject
@@ -1944,6 +2034,14 @@ Public Function ReadFileAD( _
     ReadFileAD = ADODB.ReadText()
     ADODB.Close
 End Function
+
+Public Sub SetFileDateLastModified(ByVal File As String, ByVal DateTime As Date)
+    Dim Shell As Object: Set Shell = CreateObject("Shell.Application")
+    Dim FileObject As Scripting.File: Set FileObject = FSO.GetFile(File)
+    Dim Folder As Object: Set Folder = _
+        Shell.NameSpace(FileObject.ParentFolder.Path)
+    Folder.Items.Item(FileObject.Name).ModifyDate = DateTime
+End Sub
 
 'заменяет расширение файлу на заданное
 Public Function SetFileExt( _
@@ -2077,6 +2175,32 @@ Public Sub BoostFinish(Optional ByVal EndUndoGroup As Boolean = True)
     Application.Refresh
     Application.Windows.Refresh
 End Sub
+
+'округление в большую сторону
+Public Property Get Ceiling(ByVal Number As Double) As Long
+    Dim Fixed As Long: Fixed = Fix(Number)
+    If Number > Fixed Then
+        Ceiling = Fixed + 1
+    Else
+        Ceiling = Fixed
+    End If
+End Property
+
+'если x больше или меньше лимитов, то возвращает соотв. лимит, иначе - x
+Public Property Get Clamp( _
+                        ByVal x As Variant, _
+                        Optional LowerLimit As Variant, _
+                        Optional UpperLimit As Variant _
+                    ) As Variant
+    If VBA.IsMissing(LowerLimit) Then LowerLimit = x
+    If VBA.IsMissing(UpperLimit) Then UpperLimit = x
+    If x < LowerLimit Then
+        Clamp = LowerLimit
+    ElseIf x > UpperLimit Then Clamp = UpperLimit
+    Else
+        Clamp = x
+    End If
+End Property
 
 'находит ближайшее к Value число, которое делится на Divisor без остатка
 Public Property Get ClosestDividend( _
@@ -2229,6 +2353,11 @@ Public Property Get FindMinNumberIndex(ByVal Numbers As Collection) As Long
     Next i
 End Property
 
+'округление в меньшую сторону
+Public Property Get Floor(ByVal Number As Double) As Long
+    Floor = Fix(Number)
+End Property
+
 Public Function GetCollectionCopy(ByVal Source As Collection) As Collection
     Set GetCollectionCopy = New Collection
     Dim Item As Variant
@@ -2256,6 +2385,14 @@ Public Function GetDictionaryCopy( _
         GetDictionaryCopy.Add Key, Source.Item(Key)
     Next Key
 End Function
+
+Public Property Get IsApproximate( _
+                        ByVal a As Variant, _
+                        ByVal b As Variant, _
+                        Optional ByVal Tolerance As Double = 0 _
+                    ) As Boolean
+    IsApproximate = Abs(a - b) <= Tolerance
+End Property
 
 'является ли число чётным :) Что такое Even и Odd запоминать лень...
 Public Property Get IsChet(ByVal x As Variant) As Boolean
@@ -2301,6 +2438,26 @@ End Property
 
 Public Property Get IsSome(ByRef Unknown As Variant) As Boolean
     IsSome = Not IsNone(Unknown)
+End Property
+
+Public Property Get LikeAny( _
+                        ByVal Reference As String, _
+                        ByVal PatternsSeq As Variant _
+                    ) As Boolean
+    Dim Pattern As Variant
+    For Each Pattern In PatternsSeq
+        If Reference Like Pattern Then
+            LikeAny = True
+            Exit Property
+        End If
+    Next Pattern
+End Property
+
+Public Property Get LikeAnyOf( _
+                        ByVal Reference As String, _
+                        ParamArray Patterns() As Variant _
+                    ) As Boolean
+    LikeAnyOf = LikeAny(Reference, Patterns)
 End Property
 
 Public Property Get MatchAll( _
@@ -2577,6 +2734,10 @@ End Sub
 
 '===============================================================================
 ' # приватные функции модуля
+
+Private Property Get AlwaysMissing(Optional ByVal AlwaysOmit As Variant) As Variant
+    AlwaysMissing = AlwaysOmit
+End Property
 
 'для IsOverlap
 Private Function IsIntersectReady(ByVal Shape As Shape) As Boolean
