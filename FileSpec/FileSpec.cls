@@ -8,12 +8,12 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '===============================================================================
-'   Ìîäóëü          : FileSpec
-'   Âåðñèÿ          : 2024.02.12
-'   Àâòîð           : elvin-nsk (me@elvin.nsk.ru)
-'   Ñàéò            : https://github.com/elvin-nsk/LowCoupledFromCore
-'   Íàçíà÷åíèå      : Õðàíèò èìÿ ôàéëà è ïóòü
-'   Çàâèñèìîñòè     : Íåò
+'   ÐœÐ¾Ð´ÑƒÐ»ÑŒ          : FileSpec
+'   Ð’ÐµÑ€ÑÐ¸Ñ          : 2025.02.28
+'   ÐÐ²Ñ‚Ð¾Ñ€           : elvin-nsk (me@elvin.nsk.ru)
+'   Ð¡Ð°Ð¹Ñ‚            : https://github.com/elvin-nsk/LowCoupledFromCore
+'   ÐÐ°Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ      : Ð¥Ñ€Ð°Ð½Ð¸Ñ‚ Ð¸Ð¼Ñ Ñ„Ð°Ð¹Ð»Ð° Ð¸ Ð¿ÑƒÑ‚ÑŒ
+'   Ð—Ð°Ð²Ð¸ÑÐ¸Ð¼Ð¾ÑÑ‚Ð¸     : ÐÐµÑ‚
 '===============================================================================
 
 '@Interface
@@ -33,18 +33,31 @@ Private This As This
 '===============================================================================
 ' # Constructors
 
-Friend Function New_(Optional ByVal File As String) As FileSpec
+Friend Function Build( _
+                    Optional ByVal FullFileName As String, _
+                    Optional ByVal Path As String, _
+                    Optional ByVal Name As String, _
+                    Optional ByVal Ext As String _
+                ) As FileSpec
+    Set Build = New FileSpec
+    If Not FullFileName = vbNullString Then Build.Inject FullFileName
+    If Not Path = vbNullString Then Build.Path = Path
+    If Not Name = vbNullString Then Build.Name = Name
+    If Not Ext = vbNullString Then Build.Ext = Ext
+End Function
+
+Friend Function New_(Optional ByVal FullFileName As String) As FileSpec
     Set New_ = New FileSpec
-    New_.Inject File
+    If Not FullFileName = vbNullString Then New_.Inject FullFileName
 End Function
 
 Friend Sub Inject( _
-               Optional ByVal File As String _
+               Optional ByVal FullFileName As String _
            )
     With This
-        RefreshFilePath File
-        RefreshBaseName GetFileName(File)
-        RefreshFileExt GetFileName(File)
+        RefreshFilePath FullFileName
+        RefreshBaseName FileName(FullFileName)
+        RefreshFileExt FileName(FullFileName)
     End With
 End Sub
 
@@ -101,6 +114,11 @@ Public Property Let Path(ByVal RHS As String)
     This.Path = AddProperEndingToPath(RHS)
 End Property
 
+Public Property Get RightFolder() As String
+    Dim xs() As String: xs = Split(This.Path, "\")
+    RightFolder = xs(UBound(xs) - 1)
+End Property
+
 Public Property Get Self() As FileSpec
     Set Self = Me
 End Property
@@ -108,36 +126,36 @@ End Property
 '===============================================================================
 ' # Helpers
 
-Private Sub RefreshFileExt(ByVal FileName As String)
+Private Sub RefreshFileExt(ByVal FullFileName As String)
     This.Ext = _
         VBA.Right$( _
-            FileName, _
+            FullFileName, _
             VBA.Switch( _
-                VBA.InStr(FileName, ".") = 0, _
+                VBA.InStr(FullFileName, ".") = 0, _
                     0, _
-                VBA.InStr(FileName, ".") > 0, _
-                    VBA.Len(FileName) - VBA.InStrRev(FileName, ".")) _
+                VBA.InStr(FullFileName, ".") > 0, _
+                    VBA.Len(FullFileName) - VBA.InStrRev(FullFileName, ".")) _
         )
 End Sub
 
-Private Sub RefreshBaseName(ByVal FileName As String)
+Private Sub RefreshBaseName(ByVal FullFileName As String)
     This.BaseName = _
         VBA.Left$( _
-            FileName, _
+            FullFileName, _
             VBA.Switch( _
-                VBA.InStr(FileName, ".") = 0, _
-                    VBA.Len(FileName), _
-                VBA.InStr(FileName, ".") > 0, _
-                    VBA.InStrRev(FileName, ".") - 1) _
+                VBA.InStr(FullFileName, ".") = 0, _
+                    VBA.Len(FullFileName), _
+                VBA.InStr(FullFileName, ".") > 0, _
+                    VBA.InStrRev(FullFileName, ".") - 1) _
         )
 End Sub
 
 Private Sub RefreshFilePath(ByVal FullFileName As String)
-    This.Path = VBA.Left$(FullFileName, VBA.InStrRev(FullFileName, "\"))
+    This.Path = VBA.Left(FullFileName, VBA.InStrRev(FullFileName, "\"))
 End Sub
 
 Private Function AddProperEndingToPath(ByVal Path As String) As String
-    If Not VBA.Right$(Path, 1) = "\" Then AddProperEndingToPath = Path & "\" _
+    If Not VBA.Right(Path, 1) = "\" Then AddProperEndingToPath = Path & "\" _
     Else AddProperEndingToPath = Path
 End Function
 
@@ -149,10 +167,10 @@ Private Function AddDotIfNotEmpty(ByVal Ext As String) As String
     End If
 End Function
 
-Private Function GetFileName(ByVal FullFileName As String) As String
-    GetFileName = _
+Private Function FileName(ByVal FullFileName As String) As String
+    FileName = _
         VBA.Right$( _
             FullFileName, _
-            VBA.Len(FullFileName) - VBA.InStrRev(FullFileName, "\") _
+            Len(FullFileName) - VBA.InStrRev(FullFileName, "\") _
         )
 End Function

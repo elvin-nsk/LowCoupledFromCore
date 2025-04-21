@@ -101,7 +101,7 @@ End Property
 Public Property Let Caption(ByVal RHS As String)
     View.Caption = RHS
 End Property
-Private Property Get Caption() As String
+Public Property Get Caption() As String
     Caption = View.Caption
 End Property
 
