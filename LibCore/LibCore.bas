@@ -1,7 +1,7 @@
 Attribute VB_Name = "LibCore"
 '===============================================================================
 '   Модуль          : LibCore
-'   Версия          : 2025.02.27
+'   Версия          : 2025.04.20
 '   Автор           : elvin-nsk (me@elvin.nsk.ru)
 '   Использован код : Alex Vakulenko и др.
 '   Описание        : библиотека функций для макросов
@@ -9,7 +9,7 @@ Attribute VB_Name = "LibCore"
 '===============================================================================
 
 Option Base 1
-Option Compare Text
+Option Compare Binary
 Option Explicit
 
 '===============================================================================
@@ -789,6 +789,35 @@ Public Property Get IsShape(ByRef MaybeShape As Variant) As Boolean
     IsShape = TypeOf MaybeShape Is Shape
 End Property
 
+Public Property Get IsShapeNodesInsideAnyShape( _
+                        ByVal Shape As Shape, _
+                        ByVal Shapes As ShapeRange _
+                    ) As Boolean
+    Dim TempShape As Shape
+    For Each TempShape In Shapes
+        If Not TempShape.StaticID = Shape.StaticID Then
+            If IsShapeNodesInsideOtherShape(Shape, TempShape) Then
+                IsShapeNodesInsideAnyShape = True
+                Exit Property
+            End If
+        End If
+    Next TempShape
+End Property
+
+Public Property Get IsShapeNodesInsideOtherShape( _
+                        ByVal Shape1 As Shape, _
+                        ByVal Shape2 As Shape _
+                    ) As Boolean
+  
+    Dim Node As Node
+    For Each Node In Shape1.Curve.Nodes
+        If Not Shape2.Curve.IsPointInside(Node.PositionX, Node.PositionY) Then
+            Exit Property
+        End If
+    Next Node
+    IsShapeNodesInsideOtherShape = True
+End Property
+
 Public Property Get IsShapeRange(ByRef MaybeShapeRange As Variant) As Boolean
     If Not ObjectAssigned(MaybeShapeRange) Then Exit Property
     IsShapeRange = TypeOf MaybeShapeRange Is ShapeRange
@@ -974,6 +1003,12 @@ Public Property Get RectInsideRect( _
     And (Rect1.Bottom > Rect2.Bottom)
 End Property
 
+Public Property Get ShapeCanBeFilled(ByVal Shape As Shape) As Boolean
+    Select Case Shape.Type
+    Case 1, 2, 3, 4, 6, 14: ShapeCanBeFilled = True
+    End Select
+End Property
+
 Public Property Get ShapeHasOutline(ByVal Shape As Shape) As Boolean
     On Error GoTo Fail
     ShapeHasOutline = Not (Shape.Outline.Type = cdrNoOutline)
@@ -1085,11 +1120,11 @@ End Property
 
 Public Function TryDelete(ByVal Removable As Variant) As BooleanResult
     If IsNone(Removable) Then Exit Function
-    #If DebugMode = 0 Then
+    #If DEV = 0 Then
     On Error GoTo Fail
     #End If
     Removable.Delete
-    #If DebugMode = 0 Then
+    #If DEV = 0 Then
     On Error GoTo 0
     #End If
     TryDelete = Ok
@@ -1325,7 +1360,7 @@ Public Function DuplicateActivePage( _
                     ByVal NumberOfPages As Long, _
                     Optional ByVal ExcludeLayerName As String = "" _
                 ) As Page
-    #If DebugMode = 1 Then
+    #If DEV Then
     Debug.Assert NumberOfPages > 0
     #End If
     
@@ -1722,6 +1757,15 @@ Public Sub Separate(ByRef Shapes As ShapeRange)
     Set Shapes = Result
 End Sub
 
+'если просто прочитать Shape.Name - корел обрезает до 64 символов
+'присваивает нормально
+Public Property Get ShapeName(ByVal Shape As Shape) As String
+    ShapeName = Shape.ObjectData("Name").FormattedValue
+End Property
+Public Property Let ShapeName(ByVal Shape As Shape, RHS As String)
+    Shape.Name = RHS
+End Property
+
 Public Sub SetDimensionPrecision( _
                ByVal DimensionShape As Shape, _
                ByVal Precision As Long _
@@ -1870,7 +1914,8 @@ Public Sub AppendFilesFromFolder( _
                ByVal RootFolder As Scripting.Folder, _
                ByVal ExistingCollection As Collection, _
                Optional ByVal MatchPatternsSeq As Variant, _
-               Optional ByVal SearchSubfolders As Boolean = True _
+               Optional ByVal SearchSubfolders As Boolean = True, _
+               Optional ByVal CaseSensitive As Boolean = False _
            )
     Dim File As Scripting.File
     If VBA.IsMissing(MatchPatternsSeq) Then
@@ -1879,7 +1924,9 @@ Public Sub AppendFilesFromFolder( _
         Next File
     Else
         For Each File In RootFolder.Files
-            If LikeAny(File, MatchPatternsSeq) Then ExistingCollection.Add File
+            If LikeAny(File, MatchPatternsSeq, CaseSensitive) Then
+                ExistingCollection.Add File
+            End If
         Next File
     End If
     Dim Folder As Scripting.Folder
@@ -2147,7 +2194,7 @@ Public Sub BoostStart( _
     If Not UndoGroupName = vbNullString _
    And Not ActiveDocument Is Nothing Then _
         ActiveDocument.BeginCommandGroup UndoGroupName
-    #If Not DebugMode = 1 Then
+    #If DEV = 0 Then
     If Not Optimization Then Optimization = True
     #End If
     If EventsEnabled Then EventsEnabled = False
@@ -2234,6 +2281,35 @@ Public Property Get Collection( _
     Next Element
 End Property
 
+'TODO закончить
+Public Property Get ColorToShowable(ByVal Color As Color) As String
+    With Color
+        Select Case .Type
+            Case cdrColorPantone, cdrColorSpot
+                ColorToShowable = .Name & " " & .Tint & "%"
+            Case cdrColorCMYK
+                ColorToShowable = _
+                    "C:" & .CMYKCyan & " M:" & .CMYKMagenta _
+                  & " Y:" & .CMYKYellow & " K:" & .CMYKBlack
+            Case cdrColorCMY
+            Case cdrColorRGB
+                ColorToShowable = _
+                    "R:" & .RGBRed & " G:" & .RGBGreen & " B:" & .RGBBlue
+            Case cdrColorHSB
+            Case cdrColorHLS
+            Case cdrColorBlackAndWhite
+            Case cdrColorGray
+                ColorToShowable = "G:" & .Gray
+            Case cdrColorLab
+                ColorToShowable = _
+                    "L:" & .LabLuminance _
+                  & " a:" & .LabComponentA & " b:" & .LabComponentB
+            Case cdrColorRegistration
+                ColorToShowable = "Registration " & .Tint & "%"
+        End Select
+    End With
+End Property
+
 Public Property Get Contains( _
                         ByRef ContainerSeq As Variant, _
                         ByRef Item As Variant _
@@ -2297,7 +2373,7 @@ Public Function DebugOut( _
                ByVal Context As Variant, _
                ParamArray Output() As Variant _
             )
-    #If DebugMode = 1 Then
+    #If DEV Then
     If Not VBA.VarType(Context) = vbString Then
         Context = VBA.TypeName(Context)
     End If
@@ -2311,6 +2387,60 @@ Public Property Get Deduplicate(ByVal Sequence As Variant) As VBA.Collection
     For Each Item In Sequence
         If Not Contains(Deduplicate, Item) Then Deduplicate.Add Item
     Next Item
+End Property
+
+Public Property Get ExtractSubstrings( _
+                        ByVal Text As String, _
+                        ByVal EnclosingChars As String _
+                    ) As Collection
+    Set ExtractSubstrings = New Collection
+    Dim OpeningChar As String, ClosingChar As String
+    If Len(EnclosingChars) = 1 Then
+        OpeningChar = EnclosingChars
+        ClosingChar = EnclosingChars
+    Else
+        OpeningChar = VBA.Mid(EnclosingChars, 1, 1)
+        ClosingChar = VBA.Mid(EnclosingChars, 2, 1)
+    End If
+    Dim Position As Long, CurrentChar As String
+    Dim Substring As String, Building As Boolean
+    For Position = 1 To Len(Text)
+        CurrentChar = VBA.Mid(Text, Position, 1)
+        If Building Then
+            If CurrentChar = ClosingChar Then
+                Building = False
+                ExtractSubstrings.Add Substring
+                Substring = vbNullString
+            Else
+                Substring = Substring & CurrentChar
+            End If
+        Else
+            If CurrentChar = OpeningChar Then
+                Building = True
+            End If
+        End If
+    Next Position
+End Property
+
+Public Property Get IndexOfChar( _
+                        ByVal Text As String, _
+                        ByVal Char As String, _
+                        Optional ByVal StartFrom As Long = 1, _
+                        Optional ByVal CaseSensitive As Boolean = False _
+                    ) As Long
+    If Not CaseSensitive Then
+        Text = VBA.UCase(Text)
+        Char = VBA.UCase(Char)
+    End If
+    Dim i As Long
+    Dim Length As Long: Length = Len(Text)
+    Dim Current As String
+    For i = StartFrom To Len(Text)
+        If i > Length Then Exit For
+        Current = VBA.Mid(Text, i, 1)
+        If Current = Char Then Exit For
+    Next i
+    If Current = Char Then IndexOfChar = i Else IndexOfChar = -1
 End Property
 
 'первое число в строке, всегда положительное целое
@@ -2356,6 +2486,24 @@ End Property
 'округление в меньшую сторону
 Public Property Get Floor(ByVal Number As Double) As Long
     Floor = Fix(Number)
+End Property
+
+'заменяет в тексте {0}{1}...{n} на переменные из Variables
+Public Property Get FString( _
+                        ByVal Text As String, _
+                        ParamArray Variables() As Variant _
+                    ) As String
+    Dim i As Integer, Plug As String
+    For i = LBound(Variables) To UBound(Variables)
+        Plug = "{" & i & "}"
+        Text = VBA.Replace(Text, Plug, Variables(i))
+    Next
+
+    Text = VBA.Replace(Text, "{n}", vbNewLine)
+    Text = VBA.Replace(Text, "{t}", vbTab)
+    Text = VBA.Replace(Text, "{q}", VBA.Chr(34))
+    
+    FString = Text
 End Property
 
 Public Function GetCollectionCopy(ByVal Source As Collection) As Collection
@@ -2440,12 +2588,24 @@ Public Property Get IsSome(ByRef Unknown As Variant) As Boolean
     IsSome = Not IsNone(Unknown)
 End Property
 
+Public Property Get IsWhitespace(ByVal Char As String) As Boolean
+    Select Case VBA.Asc(Char)
+        Case _
+            VBA.Asc(vbNullChar), VBA.Asc(vbTab) To VBA.Asc(vbCrLf), _
+            VBA.Asc(" ")
+            IsWhitespace = True
+    End Select
+End Property
+
 Public Property Get LikeAny( _
                         ByVal Reference As String, _
-                        ByVal PatternsSeq As Variant _
+                        ByVal PatternsSeq As Variant, _
+                        Optional ByVal CaseSensitive As Boolean = False _
                     ) As Boolean
+    If Not CaseSensitive Then Reference = VBA.UCase(Reference)
     Dim Pattern As Variant
     For Each Pattern In PatternsSeq
+        If Not CaseSensitive Then Pattern = VBA.UCase(Pattern)
         If Reference Like Pattern Then
             LikeAny = True
             Exit Property
